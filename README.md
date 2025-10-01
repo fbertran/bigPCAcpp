@@ -112,6 +112,38 @@ pr <- prcomp(bm[], center = TRUE, scale. = TRUE)
 all.equal(unclass(pr$rotation)[, 1:3], res$rotation[, 1:3], tolerance = 1e-6)
 ```
 
+`pca_bigmatrix()` can also focus on a subset of leading components while
+streaming the results into file-backed matrices. The following snippet stores the
+first four principal components and keeps a running summary of their scores.
+
+
+``` r
+library(bigmemory)
+library(bigPCAcpp)
+
+set.seed(2025)
+bm <- bigmemory::filebacked.big.matrix(nrow = 1500, ncol = 40, type = "double")
+bm[,] <- matrix(rnorm(1500 * 40), nrow = 1500)
+
+# Request only the first four components
+top_pca <- pca_bigmatrix(bm, center = TRUE, scale. = TRUE, ncomp = 4)
+top_pca$sdev
+
+# Stream the corresponding scores into a file-backed allocation
+scores_fb <- bigmemory::filebacked.big.matrix(nrow = nrow(bm), ncol = 4, type = "double")
+pca_scores_stream_bigmatrix(
+  bm,
+  scores_fb,
+  top_pca$rotation[, 1:4],
+  center = top_pca$center,
+  scale = top_pca$scale
+)
+
+# Inspect a lightweight summary without loading the entire matrix
+colMeans(scores_fb[, 1:2])
+apply(scores_fb[, 1:2], 2, sd)
+```
+
 To stream the diagnostics into `bigmemory`-backed matrices, use the
 corresponding helper functions:
 
@@ -160,6 +192,12 @@ mat[1, 1] <- 15  # introduce an outlier
 robust <- pca_robust(mat, ncomp = 3)
 robust$explained_variance
 
+# Classical PCA on the same data highlights the impact of the outlier
+bm_small <- bigmemory::big.matrix(nrow = nrow(mat), ncol = ncol(mat), type = "double")
+bm_small[,] <- mat
+classical <- pca_bigmatrix(bm_small, center = TRUE, scale. = TRUE, ncomp = 3)
+cbind(classical = classical$rotation[1:5, 1], robust = robust$rotation[1:5, 1])
+
 # Classical SVD on a file-backed big.matrix
 bm <- bigmemory::filebacked.big.matrix(200, 10, type = "double")
 bm[,] <- matrix(rnorm(2000), nrow = 200)
@@ -169,13 +207,23 @@ svd_stream$d
 # Direct access to the robust SVD routine
 svd_out <- svd_robust(mat, ncomp = 3)
 svd_out$d
+svd_out$weights[1:6]
 ```
+
+Robust decompositions down-weight the contaminated observations while the
+classical stream demonstrates how to fetch singular vectors without materialising
+the dense matrix. The robust solver also exposes per-row weights that can be
+reused to flag problematic observations for further inspection.
 
 ### Plotting diagnostics
 
 `bigPCAcpp` bundles plot helpers that operate on both dense matrices and
 `big.matrix` backends. The snippets below illustrate how to call each
-function using results from `pca_bigmatrix()`.
+function using results from `pca_bigmatrix()`. For instance, the
+`pca_plot_scores()` helper samples observations and draws a scatter plot of
+their scores on a chosen pair of components, which is particularly useful when
+you need to visually assess potential clusters without loading the full data
+set into memory.
 
 
 ``` r
