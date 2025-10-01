@@ -1,0 +1,37 @@
+Package: bigPCAcpp
+Type: Package
+Title: Principal Component Analysis for 'bigmemory' Matrices
+Version: 0.1.0
+Date: 2025-10-01
+Authors@R: person("Frederic", "Bertrand", role = c("aut", "cre"),
+       email = "frederic.bertrand@lecnam.net")
+Author: Frederic Bertrand [aut, cre]
+Maintainer: Frederic Bertrand <frederic.bertrand@lecnam.net>
+Description: High performance principal component analysis routines
+       that operate directly on 'bigmemory::big.matrix' objects. The
+       package avoids materialising large matrices in memory by
+       streaming data through 'BLAS' and 'LAPACK' kernels and provides
+       helpers to derive scores, loadings, correlations, and
+       contribution diagnostics, including utilities that stream
+       results into 'bigmemory'-backed matrices for file-based
+       workflows.
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.0.12),
+    methods
+Suggests: knitr,
+    rmarkdown,
+    bigmemory,
+    bigalgebra,
+    testthat (>= 3.0.0)
+LinkingTo: Rcpp,
+    bigmemory,
+    BH
+Encoding: UTF-8
+VignetteBuilder: knitr
+LazyLoad: yes
+NeedsCompilation: yes
+URL: https://fbertran.github.io/bigPCAcpp/, https://github.com/fbertran/bigPCAcpp/
+BugReports: https://github.com/fbertran/bigPCAcpp/issues/
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Config/testthat/edition: 3

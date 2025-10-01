@@ -1,0 +1,253 @@
+---
+title: "Scaling Principal Component Analysis with bigPCAcpp"
+author: "bigPCAcpp Authors"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Scaling Principal Component Analysis with bigPCAcpp}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+The **bigPCAcpp** package provides principal component analysis (PCA) routines
+that operate directly on [`bigmemory::big.matrix`][bigmemory] objects.
+This vignette walks through a complete analysis workflow and compares the
+results against the reference implementation from base R's
+[`prcomp()`][prcomp] to demonstrate numerical agreement.
+
+[bigmemory]: https://cran.r-project.org/package=bigmemory
+[prcomp]: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/prcomp.html
+
+We will use the classic `iris` measurement data as a small, in-memory example.
+Even for larger data sets stored on disk, the workflow is identical once a
+`big.matrix` descriptor has been created.
+
+## Preparing a `big.matrix`
+
+```{r bigmatrix-setup}
+library(bigmemory)
+library(bigPCAcpp)
+
+iris_mat <- as.matrix(iris[, 1:4])
+big_iris <- as.big.matrix(iris_mat, type = "double")
+```
+
+Every **bigPCAcpp** entry point accepts the `big.matrix` object directly (and, for
+compatibility, still works with external pointers via the `@address` slot),
+allowing analyses without copying data into regular R matrices.
+
+## Running PCA with bigPCAcpp
+
+```{r pca-run}
+big_pca <- pca_bigmatrix(
+  xpMat = big_iris,
+  center = TRUE,
+  scale = TRUE,
+  ncomp = 4L,
+  block_size = 128L
+)
+str(big_pca)
+```
+
+The returned list mirrors the structure of a `prcomp` object: singular values
+(`sdev`), rotation matrix (`rotation`), optional centering and scaling vectors,
+and additional diagnostics including the covariance matrix and explained
+variance ratios.
+
+## Comparing against `prcomp`
+
+```{r prcomp-compare}
+base_pca <- prcomp(iris_mat, center = TRUE, scale. = TRUE)
+
+align_columns <- function(reference, target) {
+  aligned <- target
+  cols <- min(ncol(reference), ncol(target))
+  for (j in seq_len(cols)) {
+    ref <- reference[, j]
+    tgt <- target[, j]
+    if (sum((ref - tgt)^2) > sum((ref + tgt)^2)) {
+      aligned[, j] <- -tgt
+    }
+  }
+  aligned
+}
+
+rotation_aligned <- align_columns(base_pca$rotation, big_pca$rotation)
+max_rotation_error <- max(abs(rotation_aligned - base_pca$rotation))
+max_sdev_error <- max(abs(big_pca$sdev - base_pca$sdev))
+
+big_scores <- pca_scores_bigmatrix(
+  xpMat = big_iris,
+  rotation = big_pca$rotation,
+  center = big_pca$center,
+  scale = big_pca$scale,
+  block_size = 128L
+)
+
+scores_aligned <- align_columns(base_pca$x, big_scores)
+max_score_error <- max(abs(scores_aligned - base_pca$x))
+
+c(
+  rotation = max_rotation_error,
+  sdev = max_sdev_error,
+  scores = max_score_error
+)
+```
+
+The maximum absolute deviations between the base implementation and **bigPCAcpp**
+are negligible (on the order of numerical precision), showing that the
+out-of-core algorithm faithfully reproduces the same components and scores.
+
+## Variable relationships
+
+The exported helpers expose common PCA diagnostics without requiring the
+original data matrix in memory.
+
+```{r diagnostics}
+loadings <- pca_variable_loadings(big_pca$rotation, big_pca$sdev)
+correlations <- pca_variable_correlations(
+  big_pca$rotation,
+  big_pca$sdev,
+  big_pca$column_sd
+)
+contributions <- pca_variable_contributions(loadings)
+
+head(loadings)
+head(correlations)
+head(contributions)
+```
+
+Loadings match the scaled rotation matrix, correlations rescale loadings back
+onto the original variable standard deviations, and contributions report the
+relative importance of each variable within a component.
+
+## Visualising PCA results
+
+The companion plotting helpers make it straightforward to inspect the
+components returned by **bigPCAcpp**.
+
+```{r plot-scree, fig.cap="Scree plot of variance explained by each component."}
+pca_plot_scree(big_pca)
+```
+
+The scree plot summarises how much variance each component explains and makes
+it easy to identify natural cutoffs.
+
+```{r plot-scores, fig.cap="Scores for the first two principal components."}
+pca_plot_scores(
+  big_iris,
+  rotation = big_pca$rotation,
+  center = big_pca$center,
+  scale = big_pca$scale,
+  max_points = nrow(big_iris),
+  sample = "head"
+)
+```
+
+Score plots provide a quick way to compare sample relationships using the
+requested principal components without materialising the full score matrix.
+
+## Next steps for larger data
+
+For on-disk matrices created with `filebacked.big.matrix()`, pass the
+descriptor pointer to `pca_bigmatrix()` and the algorithm will stream data in
+blocks, keeping memory usage bounded. Component scores can likewise be
+generated in batches using `pca_scores_stream_bigmatrix()`.
+
+```{r filebacked-example}
+library(bigmemory)
+library(bigPCAcpp)
+
+path <- tempfile(fileext = ".bin")
+desc <- paste0(path, ".desc")
+
+bm <- filebacked.big.matrix(
+  nrow = nrow(iris_mat),
+  ncol = ncol(iris_mat),
+  type = "double",
+  backingfile = basename(path),
+  backingpath = dirname(path),
+  descriptorfile = basename(desc)
+)
+
+bm[,] <- iris_mat
+
+pca <- pca_bigmatrix(bm, center = TRUE, scale = TRUE, ncomp = 4)
+scores <- filebacked.big.matrix(
+  nrow = nrow(bm),
+  ncol = ncol(pca$rotation),
+  type = "double",
+  backingfile = "scores.bin",
+  backingpath = dirname(path),
+  descriptorfile = "scores.desc"
+)
+
+pca_scores_stream_bigmatrix(
+  bm,
+  scores,
+  pca$rotation,
+  center = pca$center,
+  scale = pca$scale
+)
+```
+
+Once the scores are stored on disk, they can be sampled and plotted just like
+the in-memory workflow:
+
+```{r filebacked-plot, fig.cap="Scores streamed from a file-backed big.matrix."}
+pca_plot_scores(
+  bm,
+  rotation = pca$rotation,
+  center = pca$center,
+  scale = pca$scale,
+  components = c(1L, 2L),
+  max_points = nrow(bm),
+  sample = "head"
+)
+```
+
+```{r filebacked-example-2, eval = FALSE}
+library(bigmemory)
+library(bigPCAcpp)
+
+path <- tempfile(fileext = ".bin")
+desc <- paste0(path, ".desc")
+
+bm <- filebacked.big.matrix(
+  nrow = 5000,
+  ncol = 50,
+  type = "double",
+  backingfile = basename(path),
+  backingpath = dirname(path),
+  descriptorfile = basename(desc)
+)
+
+pca <- pca_bigmatrix(bm, center = TRUE, scale = TRUE, ncomp = 5)
+scores <- filebacked.big.matrix(
+  nrow = nrow(bm),
+  ncol = ncol(pca$rotation),
+  type = "double",
+  backingfile = "scores.bin",
+  backingpath = dirname(path),
+  descriptorfile = "scores.desc"
+)
+
+pca_scores_stream_bigmatrix(
+  bm,
+  scores,
+  pca$rotation,
+  center = pca$center,
+  scale = pca$scale
+)
+```
+
+With these building blocks, **bigPCAcpp** enables analyses that match the accuracy
+of in-memory PCA workflows while scaling to data sets that exceed RAM.

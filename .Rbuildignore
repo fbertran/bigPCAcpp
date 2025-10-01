@@ -1,0 +1,49 @@
+HowToCheck.R
+genlogo.R
+.gitignore
+^codecov\.yml$
+^revdep$
+^_pkgdown\.yml$
+^figure$
+^pkgdown$
+^Meta$
+^doc$
+
+^renv/staging
+^renv
+
+man/figures/fa-asterisk.svg
+man/figures/Cairo-fa-asterisk.svg
+man/figures/Cairo-fa-asterisk.pdf
+
+#All packages
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.gitignore$
+^NEWS$
+#For the pkgdown website
+^docs*$
+#For the cached chunks of README.Rmd
+^cache*$
+^README_cache*$
+#If README too big, not on CRAN but only on git
+#^man/figures*$
+^README\.Rmd$
+#^README\.md$
+#Specific
+^articles*$
+^old_files*$
+^LICENSE*
+#Vignette cache
+^cran-comments[.].*$
+^vignettes/.*[.](pdf|PDF)$
+^vignettes/.*[.](r|R)$
+^vignettes/[.]install_extras$
+^vignettes/.*_cache$
+^vignettes/.*_files$
+^\.github$
+
+^scripts$
+
+\.DS_Store
+^\.DS_Store$
