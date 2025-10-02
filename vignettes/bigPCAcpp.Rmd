@@ -1,9 +1,9 @@
 ---
-title: "Scaling Principal Component Analysis with bigPCAcpp"
-author: "bigPCAcpp Authors"
+title: "Fast Principal Component Analysis for Big Data with bigPCAcpp"
+author: "Frédéric Bertrand"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Scaling Principal Component Analysis with bigPCAcpp}
+  %\VignetteIndexEntry{Fast Principal Component Analysis for Big Data with bigPCAcpp}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -154,6 +154,73 @@ pca_plot_scores(
 
 Score plots provide a quick way to compare sample relationships using the
 requested principal components without materialising the full score matrix.
+
+```{r plot-correlation, fig.cap="Correlation circle highlighting how variables align with the first two components."}
+pca_plot_correlation_circle(
+  correlations,
+  components = c(1L, 2L)
+)
+```
+
+Correlation circles visualise how each variable aligns with the chosen
+components, making it easy to spot groups of features that contribute in a
+similar direction.
+
+```{r plot-biplot, fig.cap="Biplot combining sample scores and variable loadings."}
+pca_plot_biplot(
+  big_scores,
+  loadings,
+  components = c(1L, 2L)
+)
+```
+
+The biplot overlays sample scores with the variable loadings, providing a joint
+view of how observations cluster along the selected components and which
+features drive those separations.
+
+## Singular value decomposition helpers
+
+The package also exposes building blocks for singular value decomposition
+(SVD) that operate directly on `big.matrix` instances, which can be useful for
+custom pipelines that only need the singular vectors or values.
+
+```{r svd-example}
+svd_res <- svd_bigmatrix(big_iris, nu = 2L, nv = 2L, block_size = 128L)
+svd_res$d
+```
+
+The `svd_bigmatrix()` helper mirrors base R's [`svd()`][svd] but streams data
+in manageable blocks, making it practical for large file-backed matrices.
+
+[svd]: https://stat.ethz.ch/R-manual/R-devel/library/base/html/svd.html
+
+## Robust PCA and SVD
+
+When data contain outliers, the robust variants supplied by **bigPCAcpp** help
+stabilise the recovered components by down-weighting leverage points.
+
+```{r robust-pca}
+robust_pca <- pca_robust(iris_mat, ncomp = 4L)
+robust_pca$sdev
+robust_pca$robust_weights[1:10]
+```
+
+The robust PCA interface accepts regular dense matrices, computes robust
+estimates of location and scale, and returns component scores along with the
+per-row weights and iteration counts used by the re-weighted SVD.
+
+The underlying solver is also exposed directly for bespoke workflows that only
+need a robust singular value decomposition.
+
+```{r robust-svd}
+robust_svd <- svd_robust(iris_mat, ncomp = 3L)
+robust_svd$d
+robust_svd$weights[1:10]
+```
+
+The robust SVD returns singular values, left singular vectors, and the weights
+assigned to each observation, which can be combined with classical SVD results
+to assess the influence of individual rows.
 
 ## Next steps for larger data
 

@@ -8,14 +8,10 @@
 #' variants that write results to `bigmemory::big.matrix` destinations used by
 #' file-based pipelines.
 #'
-#' @name bigPCAcpp
-#' @docType package
-#' @keywords internal
-#' @useDynLib bigPCAcpp, .registration = TRUE
-#' @importFrom Rcpp evalCpp
-#' @importFrom stats rnorm
+#' @aliases bigPCAcpp-package bigPCAcpp NULL
+#' 
 #' @seealso [pca_bigmatrix()], [pca_stream_bigmatrix()]
-#' @aliases bigPCAcpp-package
+#' 
 #' @examples
 #' \dontrun{
 #' library(bigmemory)
@@ -24,3 +20,8 @@
 #' result$sdev
 #' }
 "_PACKAGE"
+
+#' @useDynLib bigPCAcpp, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+#' @importFrom stats rnorm
+NULL

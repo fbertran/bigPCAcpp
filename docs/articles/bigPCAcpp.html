@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Scaling Principal Component Analysis with bigPCAcpp • bigPCAcpp</title>
+<title>Fast Principal Component Analysis for Big Data with bigPCAcpp • bigPCAcpp</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Scaling Principal Component Analysis with bigPCAcpp">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Fast Principal Component Analysis for Big Data with bigPCAcpp">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">bigPCAcpp</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,12 @@
       <ul class="navbar-nav me-auto">
 <li class="active nav-item"><a class="nav-link" href="../articles/bigPCAcpp.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/bigPCA-benchmarks.html">Benchmarking bigPCAcpp Workflows</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -51,9 +57,9 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Scaling Principal Component Analysis with bigPCAcpp</h1>
-                        <h4 data-toc-skip class="author">bigPCAcpp
-Authors</h4>
+      <h1>Fast Principal Component Analysis for Big Data with bigPCAcpp</h1>
+                        <h4 data-toc-skip class="author">Frédéric
+Bertrand</h4>
             
       
       <small class="dont-index">Source: <a href="https://github.com/fbertran/bigPCAcpp/blob/HEAD/vignettes/bigPCAcpp.Rmd" class="external-link"><code>vignettes/bigPCAcpp.Rmd</code></a></small>
@@ -235,6 +241,78 @@ Scores for the first two principal components.
 <p>Score plots provide a quick way to compare sample relationships using
 the requested principal components without materialising the full score
 matrix.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pca_plot_correlation_circle.html">pca_plot_correlation_circle</a></span><span class="op">(</span></span>
+<span>  <span class="va">correlations</span>,</span>
+<span>  components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="bigPCAcpp_files/figure-html/plot-correlation-1.png" alt="Correlation circle highlighting how variables align with the first two components." width="700"><p class="caption">
+Correlation circle highlighting how variables align with the first two
+components.
+</p>
+</div>
+<p>Correlation circles visualise how each variable aligns with the
+chosen components, making it easy to spot groups of features that
+contribute in a similar direction.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pca_plot_biplot.html">pca_plot_biplot</a></span><span class="op">(</span></span>
+<span>  <span class="va">big_scores</span>,</span>
+<span>  <span class="va">loadings</span>,</span>
+<span>  components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="bigPCAcpp_files/figure-html/plot-biplot-1.png" alt="Biplot combining sample scores and variable loadings." width="700"><p class="caption">
+Biplot combining sample scores and variable loadings.
+</p>
+</div>
+<p>The biplot overlays sample scores with the variable loadings,
+providing a joint view of how observations cluster along the selected
+components and which features drive those separations.</p>
+</div>
+<div class="section level2">
+<h2 id="singular-value-decomposition-helpers">Singular value decomposition helpers<a class="anchor" aria-label="anchor" href="#singular-value-decomposition-helpers"></a>
+</h2>
+<p>The package also exposes building blocks for singular value
+decomposition (SVD) that operate directly on <code>big.matrix</code>
+instances, which can be useful for custom pipelines that only need the
+singular vectors or values.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">svd_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/svd_bigmatrix.html">svd_bigmatrix</a></span><span class="op">(</span><span class="va">big_iris</span>, nu <span class="op">=</span> <span class="fl">2L</span>, nv <span class="op">=</span> <span class="fl">2L</span>, block_size <span class="op">=</span> <span class="fl">128L</span><span class="op">)</span></span>
+<span><span class="va">svd_res</span><span class="op">$</span><span class="va">d</span></span>
+<span><span class="co">#&gt; [1] 95.959914 17.761034  3.460931  1.884826</span></span></code></pre></div>
+<p>The <code><a href="../reference/svd_bigmatrix.html">svd_bigmatrix()</a></code> helper mirrors base R’s <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/svd.html" class="external-link"><code>svd()</code></a>
+but streams data in manageable blocks, making it practical for large
+file-backed matrices.</p>
+</div>
+<div class="section level2">
+<h2 id="robust-pca-and-svd">Robust PCA and SVD<a class="anchor" aria-label="anchor" href="#robust-pca-and-svd"></a>
+</h2>
+<p>When data contain outliers, the robust variants supplied by
+<strong>bigPCAcpp</strong> help stabilise the recovered components by
+down-weighting leverage points.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">robust_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pca_robust.html">pca_robust</a></span><span class="op">(</span><span class="va">iris_mat</span>, ncomp <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span></span>
+<span><span class="va">robust_pca</span><span class="op">$</span><span class="va">sdev</span></span>
+<span><span class="co">#&gt; [1] 1.9153872 0.5075338 0.3074052 0.2357631</span></span>
+<span><span class="va">robust_pca</span><span class="op">$</span><span class="va">robust_weights</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span>
+<span><span class="co">#&gt;  [1] 0.02469728 0.07676234 0.43335242 0.67140174 0.67743015 0.74308617</span></span>
+<span><span class="co">#&gt;  [7] 0.65577512 0.74857591 0.79772190 0.68421285</span></span></code></pre></div>
+<p>The robust PCA interface accepts regular dense matrices, computes
+robust estimates of location and scale, and returns component scores
+along with the per-row weights and iteration counts used by the
+re-weighted SVD.</p>
+<p>The underlying solver is also exposed directly for bespoke workflows
+that only need a robust singular value decomposition.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">robust_svd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/svd_robust.html">svd_robust</a></span><span class="op">(</span><span class="va">iris_mat</span>, ncomp <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span></span>
+<span><span class="va">robust_svd</span><span class="op">$</span><span class="va">d</span></span>
+<span><span class="co">#&gt; [1] 85.31120 16.25951  3.14779</span></span>
+<span><span class="va">robust_svd</span><span class="op">$</span><span class="va">weights</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span>
+<span><span class="co">#&gt;  [1] 1 1 1 1 1 1 1 1 1 1</span></span></code></pre></div>
+<p>The robust SVD returns singular values, left singular vectors, and
+the weights assigned to each observation, which can be combined with
+classical SVD results to assess the influence of individual rows.</p>
 </div>
 <div class="section level2">
 <h2 id="next-steps-for-larger-data">Next steps for larger data<a class="anchor" aria-label="anchor" href="#next-steps-for-larger-data"></a>
@@ -245,7 +323,7 @@ matrix.</p>
 blocks, keeping memory usage bounded. Component scores can likewise be
 generated in batches using
 <code><a href="../reference/pca_stream_bigmatrix.html">pca_scores_stream_bigmatrix()</a></code>.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kaneplusplus/bigmemory" class="external-link">bigmemory</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigPCAcpp/">bigPCAcpp</a></span><span class="op">)</span></span>
 <span></span>
@@ -280,10 +358,10 @@ generated in batches using
 <span>  center <span class="op">=</span> <span class="va">pca</span><span class="op">$</span><span class="va">center</span>,</span>
 <span>  scale <span class="op">=</span> <span class="va">pca</span><span class="op">$</span><span class="va">scale</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;pointer: 0x1087add60&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;pointer: 0x11f753470&gt;</span></span></code></pre></div>
 <p>Once the scores are stored on disk, they can be sampled and plotted
 just like the in-memory workflow:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pca_plot_scores.html">pca_plot_scores</a></span><span class="op">(</span></span>
 <span>  <span class="va">bm</span>,</span>
 <span>  rotation <span class="op">=</span> <span class="va">pca</span><span class="op">$</span><span class="va">rotation</span>,</span>
@@ -298,7 +376,7 @@ just like the in-memory workflow:</p>
 Scores streamed from a file-backed big.matrix.
 </p>
 </div>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kaneplusplus/bigmemory" class="external-link">bigmemory</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigPCAcpp/">bigPCAcpp</a></span><span class="op">)</span></span>
 <span></span>

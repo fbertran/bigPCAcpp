@@ -492,10 +492,42 @@ test_that("robust SVD down-weights high leverage observations", {
   expect_true(max(robust_res$robust_weights) <= 1)
   expect_lt(robust_res$robust_weights[1], 1)
 
-  classical <- stats::prcomp(contaminated, center = TRUE, scale. = TRUE)
-  diff_classical <- abs(classical$sdev[1] - clean_res$sdev[1])
-  diff_robust <- abs(robust_res$sdev[1] - clean_res$sdev[1])
+  classical_clean <- stats::prcomp(base_data, center = TRUE, scale. = TRUE)
+  classical_cont <- stats::prcomp(contaminated, center = TRUE, scale. = TRUE)
+  classical_explained <- (classical_cont$sdev^2) / sum(classical_cont$sdev^2)
+  clean_classical_explained <- (classical_clean$sdev^2) / sum(classical_clean$sdev^2)
+  diff_classical <- sum(abs(classical_explained - clean_classical_explained))
+  diff_robust <- sum(abs(robust_res$explained_variance - clean_res$explained_variance))
   expect_lt(diff_robust, diff_classical)
+})
+
+test_that("robust PCA variance uses raw weights", {
+  set.seed(456)
+  base_data <- matrix(rnorm(150), nrow = 30, ncol = 5)
+  contaminated <- base_data
+  contaminated[1, ] <- contaminated[1, ] + 100
+
+  res <- pca_robust(contaminated, center = TRUE, scale = TRUE, ncomp = 3)
+  expect_true(any(res$robust_weights < 1))
+
+  weights <- res$robust_weights
+  scores <- res$scores
+  weighted_norms <- colSums(sweep(scores^2, 1, weights, `*`))
+  total_weight <- sum(weights)
+  expected_sdev <- if (total_weight > 1) {
+    sqrt(weighted_norms / (total_weight - 1))
+  } else {
+    sqrt(weighted_norms)
+  }
+
+  expect_equal(res$sdev, expected_sdev)
+
+  eigenvalues <- expected_sdev^2
+  total_var <- sum(eigenvalues)
+  expected_explained <- if (total_var > 0) eigenvalues / total_var else rep(0, length(eigenvalues))
+
+  expect_equal(res$explained_variance, expected_explained)
+  expect_equal(res$cumulative_variance, cumsum(expected_explained))
 })
 
 test_that("C++ robust SVD matches the R reference implementation", {

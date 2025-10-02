@@ -1,0 +1,322 @@
+---
+title: "Benchmarking bigPCAcpp Workflows"
+author: "Frédéric Bertrand"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Benchmarking bigPCAcpp Workflows}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+This vignette summarises the performance of the principal component analysis (PCA) routines provided by **bigPCAcpp** across matrices ranging from small to very large dimensions. All experiments operate on in-memory
+[`bigmemory::big.matrix`] objects to avoid file-backed storage and a baseline using base R's [`stats::prcomp()`] is included for context.
+
+The benchmarking code was executed once, and the resulting dataset is stored in the package as `benchmark_results`. The analysis below relies exclusively on the saved dataset so that the vignette can be built quickly.
+
+```{r data-load}
+data("benchmark_results", package = "bigPCAcpp")
+str(benchmark_results)
+```
+
+## How the benchmarks were produced
+
+The following chunk outlines the code that generated the stored results. The chunk is not evaluated when building the vignette to keep compilation times short, but it can be used to reproduce the dataset manually.
+
+```{r benchmark-code, eval=FALSE}
+suppressPackageStartupMessages({
+  library(bigmemory)
+  if (requireNamespace("bigPCAcpp", quietly = TRUE)) {
+    library(bigPCAcpp)
+  } else {
+    if (!requireNamespace("pkgload", quietly = TRUE)) {
+      stop("bigPCAcpp must be installed or pkgload must be available", call. = FALSE)
+    }
+    pkgload::load_all(".")
+  }
+})
+
+sizes <- list(
+  small = list(rows = 1000L, cols = 50L),
+  medium = list(rows = 5000L, cols = 100L),
+  large = list(rows = 20000L, cols = 200L),
+  xlarge = list(rows = 50000L, cols = 300L),
+  xxlarge = list(rows = 100000L, cols = 500L),
+  xxxlarge = list(rows = 100000L, cols = 2000L)
+)
+
+method_runners <- list(
+  classical = function(mats, ncomp) {
+    pca_bigmatrix(mats$big, center = TRUE, scale = TRUE, ncomp = ncomp)
+  },
+  streaming = function(mats, ncomp) {
+    pca_stream_bigmatrix(mats$big, center = TRUE, scale = TRUE, ncomp = ncomp)
+  },
+  scalable = function(mats, ncomp) {
+    pca_spca(
+      mats$big,
+      ncomp = ncomp,
+      center = TRUE,
+      scale = TRUE,
+      block_size = 2048L,
+      max_iter = 25L,
+      tol = 1e-4,
+      seed = 42L,
+      return_scores = FALSE,
+      verbose = FALSE
+    )
+  },
+  prcomp = function(mats, ncomp) {
+    stats::prcomp(
+      mats$dense,
+      center = TRUE,
+      scale. = TRUE,
+      rank. = ncomp
+    )
+  }
+)
+
+replicates_for <- function(rows) {
+  if (rows <= 5000L) {
+    20L
+  } else if (rows <= 20000L) {
+    20L
+  } else {
+    10L
+  }
+}
+
+results <- list()
+row_id <- 1L
+set.seed(123)
+
+for (dataset_name in names(sizes)) {
+  dims <- sizes[[dataset_name]]
+  message(sprintf("Generating dataset '%s' with %d rows and %d columns", dataset_name, dims$rows, dims$cols))
+  mat <- matrix(rnorm(dims$rows * dims$cols), nrow = dims$rows, ncol = dims$cols)
+  big_mat <- bigmemory::as.big.matrix(mat, type = "double")
+  ncomp <- min(10L, dims$cols)
+  reps <- replicates_for(dims$rows)
+  inputs <- list(dense = mat, big = big_mat)
+  
+  for (method_name in names(method_runners)) {
+    runner <- method_runners[[method_name]]
+    for (rep in seq_len(reps)) {
+      gc()
+      gc()
+      message(sprintf("Running %s (replicate %d/%d) on %s", method_name, rep, reps, dataset_name))
+      res <- NULL
+      timing <- system.time({
+        res <<- tryCatch(
+          runner(inputs, ncomp),
+          error = function(e) e
+        )
+      })
+      success <- !inherits(res, "error")
+      backend <- if (success) {
+        backend_val <- attr(res, "backend", exact = TRUE)
+        if (is.null(backend_val) && !is.null(res$backend)) {
+          res$backend
+        } else {
+          backend_val
+        }
+      } else {
+        NA_character_
+      }
+      iterations <- if (success) {
+        iter <- attr(res, "iterations", exact = TRUE)
+        if (is.null(iter)) NA_integer_ else as.integer(iter)
+      } else {
+        NA_integer_
+      }
+      converged <- if (success) {
+        conv <- attr(res, "converged", exact = TRUE)
+        if (is.null(conv)) NA else as.logical(conv)
+      } else {
+        NA
+      }
+      results[[row_id]] <- data.frame(
+        dataset = dataset_name,
+        rows = dims$rows,
+        cols = dims$cols,
+        ncomp = ncomp,
+        method = method_name,
+        replicate = rep,
+        user_time = unname(timing[["user.self"]]),
+        system_time = unname(timing[["sys.self"]]),
+        user_time = unname(timing[["user_time"]]),
+        success = success,
+        backend = if (is.null(backend)) NA_character_ else as.character(backend),
+        iterations = iterations,
+        converged = converged,
+        error = if (success) NA_character_ else conditionMessage(res),
+        stringsAsFactors = FALSE
+      )
+      row_id <- row_id + 1L
+    }
+  }
+  rm(mat, big_mat)
+  gc()
+  gc()
+}
+
+benchmark_results <- do.call(rbind, results)
+
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+
+save(benchmark_results, file = file.path("data", "benchmark_results.rda"), compress = "bzip2")
+```
+## Summary statistics
+
+Only successful runs are retained for the summaries. Replicate counts vary with matrix size (twenty runs for matrices up to 20,000 rows then tens runs).
+
+```{r summary-table}
+successful <- benchmark_results[benchmark_results$success, ]
+method_levels <- c("prcomp", "classical", "streaming", "scalable")
+successful$method <- factor(successful$method, levels = method_levels, ordered = TRUE)
+mean_user_time <- aggregate(user_time ~ dataset + method, successful, mean)
+colnames(mean_user_time)[colnames(mean_user_time) == "user_time"] <- "mean_user_time"
+
+sd_user_time <- aggregate(user_time ~ dataset + method, successful, sd)
+colnames(sd_user_time)[colnames(sd_user_time) == "user_time"] <- "sd_user_time"
+
+rep_counts <- aggregate(replicate ~ dataset + method, successful, length)
+colnames(rep_counts)[colnames(rep_counts) == "replicate"] <- "n_runs"
+
+summary_table <- Reduce(
+  function(x, y) merge(x, y, by = c("dataset", "method"), all = TRUE),
+  list(mean_user_time, sd_user_time, rep_counts)
+)
+
+summary_table$sd_user_time[summary_table$n_runs <= 1] <- NA_real_
+summary_table$method <- factor(summary_table$method, levels = method_levels)
+
+mean_user_time$dataset <- factor(mean_user_time$dataset,levels = c("small", "medium", "large", "xlarge", "xxlarge", "xxxlarge"),ordered = TRUE)
+
+summary_table <- summary_table[order(summary_table$dataset,summary_table$method),]
+knitr::kable(
+  summary_table,
+  digits = 3,
+  caption = "user_time time summaries (seconds) by dataset size and method."
+)
+
+summary_table2 <- summary_table[order(summary_table$method,summary_table$dataset),]
+knitr::kable(
+  summary_table2,
+  digits = 3,
+  caption = "user_time time summaries (seconds) by dataset size and method."
+)
+```
+
+## Visual comparison
+
+The plot below compares the average elapsed user time for each method across the simulated datasets. Error bars denote one standard deviation when multiple replicates are available.
+
+```{r user_time-plot}
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  library(ggplot2)
+  plot_data <- summary_table
+  plot_data$dataset <- factor(plot_data$dataset, levels = c("small", "medium", "large", "xlarge", "xxlarge", "xxxlarge"),ordered = TRUE)
+  plot_data$method <- factor(plot_data$method, levels = method_levels)
+
+  ggplot(plot_data, aes(x = dataset, y = mean_user_time, colour = method, group = method)) +
+    geom_line() +
+    geom_point(size = 2) +
+    geom_errorbar(
+      aes(ymin = mean_user_time - sd_user_time, ymax = mean_user_time + sd_user_time),
+      width = 0.1,
+      na.rm = TRUE
+    ) +
+    labs(
+      x = "Dataset size",
+      y = "Mean user_time time (s)",
+      colour = "Method",
+      title = "Performance of bigPCAcpp PCA routines",
+      subtitle = "All benchmarks run on in-memory big.matrix objects"
+    ) +
+    theme_minimal()
+  
+    ggplot(plot_data, aes(x = method, y = mean_user_time, colour = dataset, group = dataset)) +
+    geom_line() +
+    geom_point(size = 2) +
+    geom_errorbar(
+      aes(ymin = mean_user_time - sd_user_time, ymax = mean_user_time + sd_user_time),
+      width = 0.1,
+      na.rm = TRUE
+    ) +
+    labs(
+      x = "Dataset size",
+      y = "Mean user_time time (s)",
+      colour = "Method",
+      title = "Performance of bigPCAcpp PCA routines",
+      subtitle = "All benchmarks run on in-memory big.matrix objects"
+    ) +
+    theme_minimal()
+} else {
+  message("ggplot2 is not installed; skipping the benchmark plot.")
+}
+```
+
+Without the `prcomp` baseline to zoom on the results of the three other algorithms.
+
+```{r user_time-plot-zoom}
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  library(ggplot2)
+  plot_data <- subset(summary_table, summary_table$method!="prcomp")
+  plot_data$dataset <- factor(plot_data$dataset, levels = c("small", "medium", "large", "xlarge", "xxlarge", "xxxlarge"),ordered = TRUE)
+  plot_data$method <- factor(plot_data$method, levels = method_levels)
+
+  ggplot(plot_data, aes(x = dataset, y = mean_user_time, colour = method, group = method)) +
+    geom_line() +
+    geom_point(size = 2) +
+    geom_errorbar(
+      aes(ymin = mean_user_time - sd_user_time, ymax = mean_user_time + sd_user_time),
+      width = 0.1,
+      na.rm = TRUE
+    ) +
+    labs(
+      x = "Dataset size",
+      y = "Mean user_time time (s)",
+      colour = "Method",
+      title = "Performance of bigPCAcpp PCA routines",
+      subtitle = "All benchmarks run on in-memory big.matrix objects"
+    ) +
+    theme_minimal()
+  
+    ggplot(plot_data, aes(x = method, y = mean_user_time, colour = dataset, group = dataset)) +
+    geom_line() +
+    geom_point(size = 2) +
+    geom_errorbar(
+      aes(ymin = mean_user_time - sd_user_time, ymax = mean_user_time + sd_user_time),
+      width = 0.1,
+      na.rm = TRUE
+    ) +
+    labs(
+      x = "Dataset size",
+      y = "Mean user_time time (s)",
+      colour = "Method",
+      title = "Performance of bigPCAcpp PCA routines",
+      subtitle = "All benchmarks run on in-memory big.matrix objects"
+    ) +
+    theme_minimal()
+} else {
+  message("ggplot2 is not installed; skipping the benchmark plot.")
+}
+```
+
+
+## Session information
+
+```{r session-info}
+sessionInfo()
+```

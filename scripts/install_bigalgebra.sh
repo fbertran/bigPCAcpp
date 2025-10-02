@@ -22,7 +22,6 @@ declare -A VERSIONS=(
   [uuid]="1.2-1"
   [bigmemory.sri]="0.1.8"
   [bigmemory]="4.6.4"
-  [bigalgebra]="2.0.2"
 )
 
 order=(BH Rcpp uuid bigmemory.sri bigmemory bigalgebra)

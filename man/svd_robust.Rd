@@ -35,4 +35,3 @@ Compute the iteratively reweighted SVD using the high-performance C++
 implementation. The interface mirrors \code{\link[=svd_robust_R]{svd_robust_R()}} while delegating the
 heavy lifting to compiled code.
 }
-\keyword{internal}

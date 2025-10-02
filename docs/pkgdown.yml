@@ -2,8 +2,9 @@ pandoc: '3.4'
 pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
+  bigPCA-benchmarks: bigPCA-benchmarks.html
   bigPCAcpp: bigPCAcpp.html
-last_built: 2025-10-01T22:19Z
+last_built: 2025-10-02T13:25Z
 urls:
-  reference: https://fbertran.github.io/bigPCA/reference
-  article: https://fbertran.github.io/bigPCA/articles
+  reference: https://fbertran.github.io/bigPCAcpp/reference
+  article: https://fbertran.github.io/bigPCAcpp/articles

@@ -1,6 +1,10 @@
-# bigPCA 0.1.0
+# bigPCAcpp 0.9.0
+
+* Added vignettes, readme.
 
 * Initial CRAN submission.
+
+# bigPCAcpp 0.5.0
 
 * Renamed the R implementation of scalable PCA to `pca_spca_R()` and added a
   C++-backed `pca_spca()` along with `pca_spca_stream_bigmatrix()` for
@@ -9,6 +13,8 @@
 
 * Added `pca_spca()` implementing the scalable PCA algorithm of Elgamal et al.
   (2015) with streaming block power iterations for large matrices.
+
+# bigPCAcpp 0.1.0
 
 * Added an iteratively reweighted singular value decomposition backend for
   `pca_robust()` that exposes the final row weights and iteration count.

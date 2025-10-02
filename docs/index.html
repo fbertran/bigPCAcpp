@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Principal Component Analysis for bigmemory Matrices">
-<meta name="description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows.">
-<meta property="og:description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows.">
+<meta name="description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows. Additional interfaces expose scalable singular value decomposition, robust PCA, and robust SVD algorithms so that users can explore large matrices while tempering the influence of outliers. Scalable principal component analysis &lt;doi:10.1145/2723372.2751520&gt; is also implemented.">
+<meta property="og:description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows. Additional interfaces expose scalable singular value decomposition, robust PCA, and robust SVD algorithms so that users can explore large matrices while tempering the influence of outliers. Scalable principal component analysis &lt;doi:10.1145/2723372.2751520&gt; is also implemented.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">bigPCAcpp</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,12 @@
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="articles/bigPCAcpp.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="articles/bigPCA-benchmarks.html">Benchmarking bigPCAcpp Workflows</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -59,15 +65,15 @@
 </h2>
 <!-- badges: start -->
 
-<p>The <strong>bigPCAcpp</strong> package provides high performance principal component analysis (PCA) routines for <code><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">bigmemory::big.matrix</a></code> objects. The package streams data through BLAS and LAPACK kernels so that very large matrices can be analysed without first copying them into native R matrices. It also includes helpers to export PCA diagnostics such as scores, loadings, correlations, and contributions into file-backed <code>big.matrix</code> allocations suitable for downstream analysis pipelines.</p>
-<p><code>bigPCAcpp</code> exposes two complementary backends:</p>
+<p>The <strong>bigPCAcpp</strong> package provides high performance principal component analysis (PCA) routines specialised for <code><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">bigmemory::big.matrix</a></code> objects. It keeps data in bigmemory allocations from ingestion through eigendecomposition so that very large matrices can be analysed without copying them into base R matrices. In addition to the PCA core, the package offers streaming helpers that write scores, loadings, correlations, and contributions back into file-backed <code>big.matrix</code> targets for integration with downstream pipelines.</p>
+<p>Beyond classical PCA, the package ships with scalable SVD tools that can process file-backed matrices block by block, and it includes robust PCA and robust SVD routines that temper the influence of outliers while remaining compatible with bigmemory workflows. For exploratory work on large batches, a scalable PCA interface lets users extract leading components without reading the full matrix into memory.</p>
+<p>These workflows make it possible to analyse data sets that exceed the available RAM while keeping numerical stability through double-precision accumulation and LAPACK eigen decompositions. Current features include</p>
 <ul>
-<li>
-<strong>bigmemory</strong> – operates directly on in-memory or file-backed <code>big.matrix</code> objects using the bigmemory C++ API.</li>
-<li>
-<strong>bigalgebra</strong> – writes results into <code>bigalgebra</code> matrices so that large studies can keep intermediate artifacts out-of-memory while benefiting from native BLAS/LAPACK performance.</li>
+<li>centring and scaling directly on <code>big.matrix</code> inputs,</li>
+<li>incremental score generation that avoids bringing data into memory,</li>
+<li>helpers to persist PCA diagnostics in file-backed storage,</li>
+<li>SVD utilities for dense and robust decompositions backed by <code>bigmemory</code>, and</li>
 </ul>
-<p>These workflows make it possible to analyse data sets that exceed the available RAM while keeping numerical stability through double-precision accumulation and LAPACK eigen decompositions.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -75,13 +81,13 @@
 <p>You can install the development version of <strong>bigPCAcpp</strong> from GitHub with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"fbertran/bigPCAcpp"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"fbertran/bigPCAcpp"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Using GitHub PAT from the git credential store.</span></span>
+<span><span class="co">#&gt; Skipping install of 'bigPCAcpp' from a github remote, the SHA1 (96d78ba1) has not changed since last install.</span></span>
+<span><span class="co">#&gt;   Use `force = TRUE` to force installation</span></span></code></pre></div>
 <p>If you prefer a local source install, clone the repository and run:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>R CMD build bigPCAcpp</span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>R CMD INSTALL bigPCAcpp_0.<span class="dv">0</span>.<span class="fl">1.</span>tar.gz</span></code></pre></div>
-<p>For workflows that rely on the streaming big.matrix helpers, ensure that the <code>bigalgebra</code> package is installed:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"bigalgebra"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="options">Options<a class="anchor" aria-label="anchor" href="#options"></a>
@@ -122,7 +128,7 @@
 <h2 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
 </h2>
 <p>The examples below demonstrate the bigmemory workflow and compare the results with base R’s <code><a href="https://rdrr.io/r/stats/prcomp.html" class="external-link">prcomp()</a></code> implementation.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kaneplusplus/bigmemory" class="external-link">bigmemory</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigPCAcpp/">bigPCAcpp</a></span><span class="op">)</span></span>
 <span></span>
@@ -134,11 +140,20 @@
 <span></span>
 <span><span class="co"># Run PCA and extract eigenvalues and rotation</span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale. <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in pca_bigmatrix(bm, center = TRUE, scale. = TRUE): unused argument (scale. = TRUE)</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">importance</span></span>
+<span><span class="co">#&gt; NULL</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">rotation</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span></span>
+<span><span class="co">#&gt;               PC1        PC2          PC3</span></span>
+<span><span class="co">#&gt; [1,] -0.003073288 0.01338726 -0.032045333</span></span>
+<span><span class="co">#&gt; [2,]  0.003158180 0.02937183 -0.064792030</span></span>
+<span><span class="co">#&gt; [3,]  0.010154078 0.02424991  0.006917535</span></span>
+<span><span class="co">#&gt; [4,]  0.053023148 0.02069305  0.006256628</span></span>
+<span><span class="co">#&gt; [5,] -0.007681460 0.02388392  0.018323235</span></span>
 <span></span>
 <span><span class="co"># Generate PCA scores in bigmemory-backed storage</span></span>
 <span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">filebacked.big.matrix</a></span><span class="op">(</span><span class="va">n</span>, ncol <span class="op">=</span> <span class="fl">3</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in bigmemory::filebacked.big.matrix(n, ncol = 3, type = "double"): You must specify a backing file</span></span>
 <span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_scores_stream_bigmatrix</a></span><span class="op">(</span></span>
 <span>  <span class="va">bm</span>,</span>
 <span>  <span class="va">scores</span>,</span>
@@ -146,26 +161,35 @@
 <span>  center <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">center</span>,</span>
 <span>  scale <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">scale</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: `xpDest` must be a bigmemory::big.matrix or external pointer</span></span>
 <span><span class="va">scores</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt; NULL</span></span>
 <span></span>
 <span><span class="co"># Compare with prcomp()</span></span>
 <span><span class="va">pr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/prcomp.html" class="external-link">prcomp</a></span><span class="op">(</span><span class="va">bm</span><span class="op">[</span><span class="op">]</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale. <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">pr</span><span class="op">$</span><span class="va">rotation</span><span class="op">)</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="va">res</span><span class="op">$</span><span class="va">rotation</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, tolerance <span class="op">=</span> <span class="fl">1e-6</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">pr</span><span class="op">$</span><span class="va">rotation</span><span class="op">)</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="va">res</span><span class="op">$</span><span class="va">rotation</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, tolerance <span class="op">=</span> <span class="fl">1e-6</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Attributes: &lt; Component \"dim\": Mean relative difference: 79 &gt;"</span></span>
+<span><span class="co">#&gt; [2] "Numeric: lengths (75, 6000) differ"</span></span></code></pre></div>
 <p><code><a href="reference/pca_bigmatrix.html">pca_bigmatrix()</a></code> can also focus on a subset of leading components while streaming the results into file-backed matrices. The following snippet stores the first four principal components and keeps a running summary of their scores.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kaneplusplus/bigmemory" class="external-link">bigmemory</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigPCAcpp/">bigPCAcpp</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2025</span><span class="op">)</span></span>
 <span><span class="va">bm</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">filebacked.big.matrix</a></span><span class="op">(</span>nrow <span class="op">=</span> <span class="fl">1500</span>, ncol <span class="op">=</span> <span class="fl">40</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in bigmemory::filebacked.big.matrix(nrow = 1500, ncol = 40, type = "double"): You must specify a backing file</span></span>
 <span><span class="va">bm</span><span class="op">[</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1500</span> <span class="op">*</span> <span class="fl">40</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1500</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in SetElements.bm(x, i, j, value): Matrix dimensions do not agree with big.matrix instance set size.</span></span>
 <span></span>
 <span><span class="co"># Request only the first four components</span></span>
 <span><span class="va">top_pca</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale. <span class="op">=</span> <span class="cn">TRUE</span>, ncomp <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in pca_bigmatrix(bm, center = TRUE, scale. = TRUE, ncomp = 4): unused argument (scale. = TRUE)</span></span>
 <span><span class="va">top_pca</span><span class="op">$</span><span class="va">sdev</span></span>
+<span><span class="co">#&gt; Error: object 'top_pca' not found</span></span>
 <span></span>
 <span><span class="co"># Stream the corresponding scores into a file-backed allocation</span></span>
 <span><span class="va">scores_fb</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">filebacked.big.matrix</a></span><span class="op">(</span>nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">bm</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">4</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in bigmemory::filebacked.big.matrix(nrow = nrow(bm), ncol = 4, type = "double"): You must specify a backing file</span></span>
 <span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_scores_stream_bigmatrix</a></span><span class="op">(</span></span>
 <span>  <span class="va">bm</span>,</span>
 <span>  <span class="va">scores_fb</span>,</span>
@@ -173,19 +197,22 @@
 <span>  center <span class="op">=</span> <span class="va">top_pca</span><span class="op">$</span><span class="va">center</span>,</span>
 <span>  scale <span class="op">=</span> <span class="va">top_pca</span><span class="op">$</span><span class="va">scale</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: object 'scores_fb' not found</span></span>
 <span></span>
 <span><span class="co"># Inspect a lightweight summary without loading the entire matrix</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">scores_fb</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">scores_fb</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="fl">2</span>, <span class="va">sd</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; Error: object 'scores_fb' not found</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">scores_fb</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="fl">2</span>, <span class="va">sd</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: object 'scores_fb' not found</span></span></code></pre></div>
 <p>To stream the diagnostics into <code>bigmemory</code>-backed matrices, use the corresponding helper functions:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kaneplusplus/bigmemory" class="external-link">bigmemory</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigalgebra/" class="external-link">bigalgebra</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigPCAcpp/">bigPCAcpp</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">25</span></span>
 <span><span class="va">bm</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">filebacked.big.matrix</a></span><span class="op">(</span><span class="va">n</span>, <span class="va">p</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in bigmemory::filebacked.big.matrix(n, p, type = "double"): You must specify a backing file</span></span>
 <span><span class="va">bm</span><span class="op">[</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="va">n</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">rotation</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span>nrow <span class="op">=</span> <span class="va">p</span>, ncol <span class="op">=</span> <span class="va">p</span><span class="op">)</span></span>
@@ -195,13 +222,16 @@
 <span></span>
 <span><span class="va">pca_stream</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_stream_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, xpRotation <span class="op">=</span> <span class="va">rotation</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_variable_loadings_stream_bigmatrix</a></span><span class="op">(</span><span class="va">rotation</span>, <span class="va">pca_stream</span><span class="op">$</span><span class="va">sdev</span>, <span class="va">loadings</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;pointer: 0x1240bcac0&gt;</span></span>
 <span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_variable_correlations_stream_bigmatrix</a></span><span class="op">(</span><span class="va">rotation</span>, <span class="va">pca_stream</span><span class="op">$</span><span class="va">sdev</span>, <span class="va">correlations</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_variable_contributions_stream_bigmatrix</a></span><span class="op">(</span><span class="va">loadings</span>, <span class="va">contrib</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; Error in pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev, : argument "xpDest" is missing, with no default</span></span>
+<span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_variable_contributions_stream_bigmatrix</a></span><span class="op">(</span><span class="va">loadings</span>, <span class="va">contrib</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;pointer: 0x1244e5480&gt;</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="robust-pca-and-singular-value-decompositions">Robust PCA and singular value decompositions<a class="anchor" aria-label="anchor" href="#robust-pca-and-singular-value-decompositions"></a>
 </h3>
 <p>Robust workflows dampen the influence of outliers while retaining the familiar PCA interface. The <code><a href="reference/pca_robust.html">pca_robust()</a></code> helper centres variables by the median, optionally scales by the MAD, and relies on an iteratively reweighted SVD to derive principal components. The same robust solver is exposed directly via <code><a href="reference/svd_robust.html">svd_robust()</a></code> for use in custom pipelines, and the streaming-friendly <code><a href="reference/svd_bigmatrix.html">svd_bigmatrix()</a></code> wrapper computes classical SVDs on <code>big.matrix</code> objects without materialising dense copies in memory.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kaneplusplus/bigmemory" class="external-link">bigmemory</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigPCAcpp/">bigPCAcpp</a></span><span class="op">)</span></span>
 <span></span>
@@ -212,30 +242,40 @@
 <span><span class="co"># Robust PCA keeps the outlier from dominating the rotation</span></span>
 <span><span class="va">robust</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_robust.html">pca_robust</a></span><span class="op">(</span><span class="va">mat</span>, ncomp <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">robust</span><span class="op">$</span><span class="va">explained_variance</span></span>
+<span><span class="co">#&gt; [1] 0.5610379 0.2456267 0.1933353</span></span>
 <span></span>
 <span><span class="co"># Classical PCA on the same data highlights the impact of the outlier</span></span>
 <span><span class="va">bm_small</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span>nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
 <span><span class="va">bm_small</span><span class="op">[</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="va">mat</span></span>
 <span><span class="va">classical</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_bigmatrix</a></span><span class="op">(</span><span class="va">bm_small</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale. <span class="op">=</span> <span class="cn">TRUE</span>, ncomp <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in pca_bigmatrix(bm_small, center = TRUE, scale. = TRUE, ncomp = 3): unused argument (scale. = TRUE)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>classical <span class="op">=</span> <span class="va">classical</span><span class="op">$</span><span class="va">rotation</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">]</span>, robust <span class="op">=</span> <span class="va">robust</span><span class="op">$</span><span class="va">rotation</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: object 'classical' not found</span></span>
 <span></span>
 <span><span class="co"># Classical SVD on a file-backed big.matrix</span></span>
 <span><span class="va">bm</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">filebacked.big.matrix</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">10</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in bigmemory::filebacked.big.matrix(200, 10, type = "double"): You must specify a backing file</span></span>
 <span><span class="va">bm</span><span class="op">[</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2000</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in SetElements.bm(x, i, j, value): Matrix dimensions do not agree with big.matrix instance set size.</span></span>
 <span><span class="va">svd_stream</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/svd_bigmatrix.html">svd_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, nu <span class="op">=</span> <span class="fl">3</span>, nv <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">svd_stream</span><span class="op">$</span><span class="va">d</span></span>
+<span><span class="co">#&gt;  [1] 36.26467 36.02548 35.11987 34.54261 34.18348 33.94098 33.44267 33.35246 32.58666 32.25824 32.11332 31.77055</span></span>
+<span><span class="co">#&gt; [13] 31.48171 31.39417 30.61438 30.36906 30.12348 29.84740 29.67172 29.00646 28.67806 28.25614 27.99738 27.47180</span></span>
+<span><span class="co">#&gt; [25] 27.08349</span></span>
 <span></span>
 <span><span class="co"># Direct access to the robust SVD routine</span></span>
 <span><span class="va">svd_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/svd_robust.html">svd_robust</a></span><span class="op">(</span><span class="va">mat</span>, ncomp <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">svd_out</span><span class="op">$</span><span class="va">d</span></span>
-<span><span class="va">svd_out</span><span class="op">$</span><span class="va">weights</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 16.789433  6.178555  5.620833</span></span>
+<span><span class="va">svd_out</span><span class="op">$</span><span class="va">weights</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span></span>
+<span><span class="co">#&gt; [1] 1 1 1 1 1 1</span></span></code></pre></div>
 <p>Robust decompositions down-weight the contaminated observations while the classical stream demonstrates how to fetch singular vectors without materialising the dense matrix. The robust solver also exposes per-row weights that can be reused to flag problematic observations for further inspection.</p>
 </div>
 <div class="section level3">
 <h3 id="plotting-diagnostics">Plotting diagnostics<a class="anchor" aria-label="anchor" href="#plotting-diagnostics"></a>
 </h3>
 <p><code>bigPCAcpp</code> bundles plot helpers that operate on both dense matrices and <code>big.matrix</code> backends. The snippets below illustrate how to call each function using results from <code><a href="reference/pca_bigmatrix.html">pca_bigmatrix()</a></code>. For instance, the <code><a href="reference/pca_plot_scores.html">pca_plot_scores()</a></code> helper samples observations and draws a scatter plot of their scores on a chosen pair of components, which is particularly useful when you need to visually assess potential clusters without loading the full data set into memory.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kaneplusplus/bigmemory" class="external-link">bigmemory</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://fbertran.github.io/bigPCAcpp/">bigPCAcpp</a></span><span class="op">)</span></span>
 <span></span>
@@ -243,9 +283,11 @@
 <span><span class="va">bm</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span><span class="fl">500</span>, <span class="fl">6</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
 <span><span class="va">bm</span><span class="op">[</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">500</span> <span class="op">*</span> <span class="fl">6</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale. <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in pca_bigmatrix(bm, center = TRUE, scale. = TRUE): unused argument (scale. = TRUE)</span></span>
 <span></span>
 <span><span class="co"># Scree plot of explained variance</span></span>
 <span><span class="fu"><a href="reference/pca_plot_scree.html">pca_plot_scree</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in pca_plot_scree(res): `pca_result` must contain `sdev` and `explained_variance` components</span></span>
 <span></span>
 <span><span class="co"># Scatter plot of sampled scores on PCs 1 and 2</span></span>
 <span><span class="fu"><a href="reference/pca_plot_scores.html">pca_plot_scores</a></span><span class="op">(</span></span>
@@ -257,22 +299,40 @@
 <span>  max_points <span class="op">=</span> <span class="fl">2000L</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">2024</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in sweep(block, 2, center, "-"): STATS is longer than the extent of 'dim(x)[MARGIN]'</span></span>
+<span><span class="co">#&gt; Warning in sweep(block, 2, safe_scale, "/"): STATS is longer than the extent of 'dim(x)[MARGIN]'</span></span>
+<span><span class="co">#&gt; Error in block %*% rot[, comps, drop = FALSE]: non-conformable arguments</span></span>
 <span></span>
 <span><span class="co"># Contribution bar plot for the leading component</span></span>
 <span><span class="va">loadings</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_variable_loadings</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">rotation</span>, <span class="va">res</span><span class="op">$</span><span class="va">sdev</span><span class="op">)</span></span>
 <span><span class="va">contrib</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_variable_contributions</a></span><span class="op">(</span><span class="va">loadings</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/pca_plot_contributions.html">pca_plot_contributions</a></span><span class="op">(</span><span class="va">contrib</span>, component <span class="op">=</span> <span class="fl">1L</span>, top_n <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span>
-<span></span>
+<span><span class="fu"><a href="reference/pca_plot_contributions.html">pca_plot_contributions</a></span><span class="op">(</span><span class="va">contrib</span>, component <span class="op">=</span> <span class="fl">1L</span>, top_n <span class="op">=</span> <span class="fl">10L</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-plotexamples-1.png" alt="plot of chunk plotexamples" width="100%"><p class="caption">
+plot of chunk plotexamples
+</p>
+</div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># Correlation circle for the first two components</span></span>
 <span><span class="va">correlations</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_variable_correlations</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">rotation</span>, <span class="va">res</span><span class="op">$</span><span class="va">sdev</span>, <span class="va">res</span><span class="op">$</span><span class="va">column_sd</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/pca_plot_correlation_circle.html">pca_plot_correlation_circle</a></span><span class="op">(</span><span class="va">correlations</span>, components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
+<span><span class="co">#&gt; Error: Not compatible with requested type: [type=NULL; target=double].</span></span>
+<span><span class="fu"><a href="reference/pca_plot_correlation_circle.html">pca_plot_correlation_circle</a></span><span class="op">(</span><span class="va">correlations</span>, components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-plotexamples-2.png" alt="plot of chunk plotexamples" width="100%"><p class="caption">
+plot of chunk plotexamples
+</p>
+</div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># Biplot combining scores and loadings</span></span>
 <span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">$</span><span class="va">scores</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">scores</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_scores_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, <span class="va">res</span><span class="op">$</span><span class="va">rotation</span>, center <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">center</span>, scale <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">scale</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="fu"><a href="reference/pca_plot_biplot.html">pca_plot_biplot</a></span><span class="op">(</span><span class="va">scores</span>, <span class="va">loadings</span>, components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co">#&gt; Error: Rotation matrix and big.matrix dimensions are incompatible</span></span>
+<span><span class="fu"><a href="reference/pca_plot_biplot.html">pca_plot_biplot</a></span><span class="op">(</span><span class="va">scores</span>, <span class="va">loadings</span>, components <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in if (ncol_scores &lt; max(comps)) {: argument is of length zero</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

@@ -714,13 +714,13 @@ SEXP pca_spca_bigmatrix(SEXP xpMat,
                         bool verbose = false) {
   Rcpp::XPtr<BigMatrix> pMat(xpMat);
   const int matrix_type = pMat->matrix_type();
-  if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
-    return spca_power_impl<float>(pMat, center, scale, ncomp, block_size, max_iter, tol, return_scores, verbose);
-  }
   if (matrix_type == BigMatrix::DOUBLE || matrix_type == static_cast<int>(sizeof(double))) {
     return spca_power_impl<double>(pMat, center, scale, ncomp, block_size, max_iter, tol, return_scores, verbose);
+  } else if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
+    return spca_power_impl<float>(pMat, center, scale, ncomp, block_size, max_iter, tol, return_scores, verbose);
+  } else {
+    stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
   }
-  stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
 }
 
 // [[Rcpp::export(name = ".pca_bigmatrix")]]
@@ -731,13 +731,13 @@ SEXP pca_bigmatrix(SEXP xpMat,
                    std::size_t block_size = 1024) {
   Rcpp::XPtr<BigMatrix> pMat(xpMat);
   const int matrix_type = pMat->matrix_type();
-  if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
-    return pca_impl<float>(pMat, center, scale, ncomp, block_size);
-  }
   if (matrix_type == BigMatrix::DOUBLE || matrix_type == static_cast<int>(sizeof(double))) {
     return pca_impl<double>(pMat, center, scale, ncomp, block_size);
+  } else if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
+    return pca_impl<float>(pMat, center, scale, ncomp, block_size);
+  } else {
+    stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
   }
-  stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
 }
 
 namespace {
@@ -1020,13 +1020,13 @@ SEXP svd_bigmatrix(SEXP xpMat,
     stop("`method` must be either 'dgesdd' or 'dgesvd'");
   }
   const int matrix_type = pMat->matrix_type();
-  if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
-    return svd_impl<float>(pMat, nu, nv, block_size, prefer_dgesdd);
-  }
   if (matrix_type == BigMatrix::DOUBLE || matrix_type == static_cast<int>(sizeof(double))) {
     return svd_impl<double>(pMat, nu, nv, block_size, prefer_dgesdd);
+  } else if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
+    return svd_impl<float>(pMat, nu, nv, block_size, prefer_dgesdd);
+  } else {
+    stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
   }
-  stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
 }
 
 namespace {
@@ -1144,13 +1144,13 @@ SEXP pca_scores_bigmatrix(SEXP xpMat,
                           std::size_t block_size = 1024) {
   Rcpp::XPtr<BigMatrix> pMat(xpMat);
   const int matrix_type = pMat->matrix_type();
-  if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
-    return scores_impl<float>(pMat, rotation, center, scale, ncomp, block_size);
-  }
   if (matrix_type == BigMatrix::DOUBLE || matrix_type == static_cast<int>(sizeof(double))) {
     return scores_impl<double>(pMat, rotation, center, scale, ncomp, block_size);
+  } else if (matrix_type == BigMatrix::FLOAT || matrix_type == static_cast<int>(sizeof(float))) {
+    return scores_impl<float>(pMat, rotation, center, scale, ncomp, block_size);
+  } else {
+    stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
   }
-  stop("Unsupported big.matrix type. Use a double- or float-based big.matrix.");
 }
 
 namespace {

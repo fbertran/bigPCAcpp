@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">bigPCAcpp</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,10 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/bigPCAcpp.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/bigPCA-benchmarks.html">Benchmarking bigPCAcpp Workflows</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -33,7 +37,26 @@
       <small>Source: <a href="https://github.com/fbertran/bigPCAcpp/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
-  </main></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.0" id="bigpcacpp-090">bigPCAcpp 0.9.0<a class="anchor" aria-label="anchor" href="#bigpcacpp-090"></a></h2>
+<ul><li><p>Added vignettes, readme.</p></li>
+<li><p>Initial CRAN submission.</p></li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.5.0" id="bigpcacpp-050">bigPCAcpp 0.5.0<a class="anchor" aria-label="anchor" href="#bigpcacpp-050"></a></h2>
+<ul><li><p>Renamed the R implementation of scalable PCA to <code><a href="../reference/pca_spca.html">pca_spca_R()</a></code> and added a C++-backed <code><a href="../reference/pca_spca.html">pca_spca()</a></code> along with <code><a href="../reference/pca_stream_bigmatrix.html">pca_spca_stream_bigmatrix()</a></code> for <code><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">bigmemory::big.matrix</a></code> workflows, retaining the block power iteration algorithm of Elgamal et al. (2015).</p></li>
+<li>
+<p>Added <code><a href="../reference/pca_spca.html">pca_spca()</a></code> implementing the scalable PCA algorithm of Elgamal et al.</p>
+<ol start="2015" style="list-style-type: decimal"><li>with streaming block power iterations for large matrices.</li>
+</ol></li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.0" id="bigpcacpp-010">bigPCAcpp 0.1.0<a class="anchor" aria-label="anchor" href="#bigpcacpp-010"></a></h2>
+<ul><li><p>Added an iteratively reweighted singular value decomposition backend for <code><a href="../reference/pca_robust.html">pca_robust()</a></code> that exposes the final row weights and iteration count.</p></li>
+<li><p>Implemented a compiled <code><a href="../reference/svd_robust.html">svd_robust()</a></code> helper with an <code><a href="../reference/svd_robust_R.html">svd_robust_R()</a></code> reference implementation.</p></li>
+</ul></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

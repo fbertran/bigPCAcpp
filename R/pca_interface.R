@@ -107,7 +107,7 @@ pca_robust <- function(x, center = TRUE, scale = FALSE, ncomp = NULL) {
         combined_weights <- leverage_weights
     }
     weight_contrib <- if (length(combined_weights) == n) {
-        combined_weights^2
+        combined_weights
     } else {
         rep(1, n)
     }
@@ -312,7 +312,7 @@ svd_robust_R <- function(x, ncomp, max_iter = 25L, tol = sqrt(.Machine$double.ep
 #' @return A list containing the left and right singular vectors (`u` and `v`),
 #'   the singular values (`d`), the final row weights (`weights`), and the number
 #'   of iterations required for convergence (`iterations`).
-#' @keywords internal
+#' @export
 svd_robust <- function(x, ncomp, max_iter = 25L, tol = sqrt(.Machine$double.eps), huber_k = 1.345) {
     prepared <- prepare_svd_robust_input(x, ncomp, max_iter, tol, huber_k)
     .svd_robust_cpp(prepared$x, prepared$ncomp, prepared$max_iter, prepared$tol, prepared$huber_k)
