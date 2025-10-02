@@ -212,14 +212,14 @@ destination big.matrix.</p></li>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">scale</span>,</span></span>
 <span class="r-in"><span>    ncomp <span class="op">=</span> <span class="va">ncomp</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7ec610&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x1290c8a40&gt;</span>
 <span class="r-in"><span><span class="va">loadings_store</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, <span class="va">ncomp</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pca_variable_loadings_stream_bigmatrix</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">rotation_stream_bigmatrix</span>,</span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">sdev</span>,</span></span>
 <span class="r-in"><span>    <span class="va">loadings_store</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7e63a0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x109ff98c0&gt;</span>
 <span class="r-in"><span><span class="va">correlation_store</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, <span class="va">ncomp</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pca_variable_correlations_stream_bigmatrix</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">rotation_stream_bigmatrix</span>,</span></span>
@@ -228,13 +228,13 @@ destination big.matrix.</p></li>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">scale</span>,</span></span>
 <span class="r-in"><span>    <span class="va">correlation_store</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7e7c80&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x109fa1190&gt;</span>
 <span class="r-in"><span><span class="va">contribution_store</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, <span class="va">ncomp</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pca_variable_contributions_stream_bigmatrix</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">loadings_store</span>,</span></span>
 <span class="r-in"><span>    <span class="va">contribution_store</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7b1510&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x109f8ff40&gt;</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

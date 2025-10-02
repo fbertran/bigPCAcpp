@@ -11,8 +11,8 @@
   `bigmemory::big.matrix` workflows, retaining the block power iteration
   algorithm of Elgamal et al. (2015).
 
-* Added `pca_spca()` implementing the scalable PCA algorithm of Elgamal et al.
-  (2015) with streaming block power iterations for large matrices.
+* Added `pca_spca()` implementing the scalable PCA algorithm of Elgamal et 
+  al. (2015) with streaming block power iterations for large matrices.
 
 # bigPCAcpp 0.1.0
 
