@@ -6,13 +6,14 @@ output: rmarkdown::github_document
 
 
 
-# bigPCAcpp
+# bigPCAcpp <img src="man/figures/BigPCAcpp_hex_dark.svg" align="right" width="200"/>
 
 # Principal component analysis for bigmemory matrices
 ## Frédéric Bertrand
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml)
+[![R-hub](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml)
 <!-- badges: end -->
 
 The **bigPCAcpp** package provides high performance principal component
@@ -49,9 +50,6 @@ You can install the development version of **bigPCAcpp** from GitHub with:
 ``` r
 # install.packages("devtools")
 devtools::install_github("fbertran/bigPCAcpp")
-#> Using GitHub PAT from the git credential store.
-#> Skipping install of 'bigPCAcpp' from a github remote, the SHA1 (96d78ba1) has not changed since last install.
-#>   Use `force = TRUE` to force installation
 ```
 
 If you prefer a local source install, clone the repository and run:
@@ -59,7 +57,7 @@ If you prefer a local source install, clone the repository and run:
 
 ``` r
 R CMD build bigPCAcpp
-R CMD INSTALL bigPCAcpp_0.0.1.tar.gz
+R CMD INSTALL bigPCAcpp_0.9.0.tar.gz
 ```
 
 ## Options
@@ -93,37 +91,47 @@ bm <- bigmemory::big.matrix(n, p, type = "double")
 bm[,] <- matrix(rnorm(n * p), nrow = n)
 
 # Run PCA and extract eigenvalues and rotation
-res <- pca_bigmatrix(bm, center = TRUE, scale. = TRUE)
-#> Error in pca_bigmatrix(bm, center = TRUE, scale. = TRUE): unused argument (scale. = TRUE)
+res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
+res$eigenvalues
+#>  [1] 1.2974521 1.2356009 1.2232801 1.1694527 1.1297600 1.1256250 1.0985450
+#>  [8] 1.0784340 1.0740881 1.0636447 1.0302252 1.0176252 0.9965482 0.9677135
+#> [15] 0.9528543 0.9369611 0.9354637 0.9049283 0.8805357 0.8610696 0.8548291
+#> [22] 0.8089778 0.7970943 0.7885825 0.7707089
 res$importance
 #> NULL
 res$rotation[1:5, 1:3]
-#>               PC1        PC2          PC3
-#> [1,] -0.003073288 0.01338726 -0.032045333
-#> [2,]  0.003158180 0.02937183 -0.064792030
-#> [3,]  0.010154078 0.02424991  0.006917535
-#> [4,]  0.053023148 0.02069305  0.006256628
-#> [5,] -0.007681460 0.02388392  0.018323235
+#>             [,1]       [,2]        [,3]
+#> [1,]  0.42734627  0.1757886 -0.02142206
+#> [2,] -0.04231253  0.3583515 -0.09321064
+#> [3,]  0.03562377  0.2737820 -0.08287123
+#> [4,] -0.32445485  0.3068051  0.12594060
+#> [5,] -0.14667608 -0.2407755 -0.03819737
 
-# Generate PCA scores in bigmemory-backed storage
-scores <- bigmemory::filebacked.big.matrix(n, ncol = 3, type = "double")
-#> Error in bigmemory::filebacked.big.matrix(n, ncol = 3, type = "double"): You must specify a backing file
-pca_scores_stream_bigmatrix(
+# Generate PCA scores in bigmemory storage
+scores <- bigmemory::big.matrix(
+  nrow = n,
+  ncol = 3,
+  type = "double"
+)
+
+(pca_scores_bigmatrix(
   bm,
-  scores,
-  res$rotation[, 1:3],
+  res$rotation,
   center = res$center,
   scale = res$scale
-)
-#> Error: `xpDest` must be a bigmemory::big.matrix or external pointer
-scores[1:5, ]
-#> NULL
+))[1:6,1:6]
+#>             [,1]       [,2]       [,3]        [,4]        [,5]       [,6]
+#> [1,] -0.08978139 -0.7496783 -0.3619383  0.08025011 -0.22828407  2.2293161
+#> [2,] -0.30554898 -1.0250646 -0.3740140  0.16309998  1.59826447 -0.1387601
+#> [3,]  1.53710244 -1.4716200  2.3195714  0.96767379 -0.53696205  1.5548174
+#> [4,] -0.97912588 -1.2166495 -0.3821723 -0.43142632  0.16595380 -1.3126538
+#> [5,]  0.09497110  1.2361398  1.0474818 -0.07537236  0.01495371 -0.9563269
+#> [6,] -0.45077712  1.9224814  0.8255443 -0.63438222  1.58969507 -0.4220241
 
-# Compare with prcomp()
-pr <- prcomp(bm[], center = TRUE, scale. = TRUE)
-all.equal(unclass(pr$rotation)[, 1:3], res$rotation[, 1:3], tolerance = 1e-6)
-#> [1] "Attributes: < Component \"dim\": Mean relative difference: 79 >"
-#> [2] "Numeric: lengths (75, 6000) differ"
+# Compare sum of absolute values with prcomp()
+pr <- prcomp(bm[], center = TRUE, scale = TRUE)
+sum(abs(abs(pr$rotation[, 1:3])-abs(res$rotation[, 1:3])))<10^(-6)
+#> [1] TRUE
 ```
 
 `pca_bigmatrix()` can also focus on a subset of leading components while
@@ -136,20 +144,22 @@ library(bigmemory)
 library(bigPCAcpp)
 
 set.seed(2025)
-bm <- bigmemory::filebacked.big.matrix(nrow = 1500, ncol = 40, type = "double")
-#> Error in bigmemory::filebacked.big.matrix(nrow = 1500, ncol = 40, type = "double"): You must specify a backing file
+bm <- bigmemory::big.matrix(nrow = 1500, ncol = 40, type = "double")
 bm[,] <- matrix(rnorm(1500 * 40), nrow = 1500)
-#> Error in SetElements.bm(x, i, j, value): Matrix dimensions do not agree with big.matrix instance set size.
 
 # Request only the first four components
-top_pca <- pca_bigmatrix(bm, center = TRUE, scale. = TRUE, ncomp = 4)
-#> Error in pca_bigmatrix(bm, center = TRUE, scale. = TRUE, ncomp = 4): unused argument (scale. = TRUE)
+top_pca <- pca_bigmatrix(bm, center = TRUE, scale = TRUE, ncomp = 4)
 top_pca$sdev
-#> Error: object 'top_pca' not found
+#> [1] 1.141546 1.124998 1.119607 1.109924
 
 # Stream the corresponding scores into a file-backed allocation
-scores_fb <- bigmemory::filebacked.big.matrix(nrow = nrow(bm), ncol = 4, type = "double")
-#> Error in bigmemory::filebacked.big.matrix(nrow = nrow(bm), ncol = 4, type = "double"): You must specify a backing file
+path <- tempfile(fileext = ".bin")
+desc <- paste0(path, ".desc")
+
+scores_fb <- bigmemory::filebacked.big.matrix(nrow = nrow(bm), ncol = 4,
+             type = "double", backingfile = basename(path), backingpath =
+             dirname(path), descriptorfile = basename(desc)
+)
 pca_scores_stream_bigmatrix(
   bm,
   scores_fb,
@@ -157,13 +167,13 @@ pca_scores_stream_bigmatrix(
   center = top_pca$center,
   scale = top_pca$scale
 )
-#> Error: object 'scores_fb' not found
+#> <pointer: 0x12b7fed70>
 
 # Inspect a lightweight summary without loading the entire matrix
 colMeans(scores_fb[, 1:2])
-#> Error: object 'scores_fb' not found
+#> [1] 3.944992e-17 3.064216e-17
 apply(scores_fb[, 1:2], 2, sd)
-#> Error: object 'scores_fb' not found
+#> [1] 1.141546 1.124998
 ```
 
 To stream the diagnostics into `bigmemory`-backed matrices, use the
@@ -176,8 +186,7 @@ library(bigPCAcpp)
 
 n <- 1000
 p <- 25
-bm <- bigmemory::filebacked.big.matrix(n, p, type = "double")
-#> Error in bigmemory::filebacked.big.matrix(n, p, type = "double"): You must specify a backing file
+bm <- bigmemory::big.matrix(n, p, type = "double")
 bm[,] <- matrix(rnorm(n * p), nrow = n)
 
 rotation <- bigmemory::big.matrix(nrow = p, ncol = p)
@@ -185,13 +194,16 @@ loadings <- bigmemory::big.matrix(nrow = p, ncol = p)
 correlations <- bigmemory::big.matrix(nrow = p, ncol = p)
 contrib <- bigmemory::big.matrix(nrow = p, ncol = p)
 
-pca_stream <- pca_stream_bigmatrix(bm, xpRotation = rotation, center = TRUE, scale = FALSE)
-pca_variable_loadings_stream_bigmatrix(rotation, pca_stream$sdev, loadings)
-#> <pointer: 0x1240bcac0>
-pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev, correlations)
+pca_stream <- pca_stream_bigmatrix(bm, xpRotation = rotation, 
+                                   center = TRUE, scale = FALSE)
+pca_variable_loadings_stream_bigmatrix(rotation, pca_stream$sdev,
+                                       loadings)
+#> <pointer: 0x11b62b000>
+pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev,
+                           pca_stream$column_sd, correlations)
 #> Error in pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev, : argument "xpDest" is missing, with no default
 pca_variable_contributions_stream_bigmatrix(loadings, contrib)
-#> <pointer: 0x1244e5480>
+#> <pointer: 0x11b626300>
 ```
 
 ### Robust PCA and singular value decompositions
@@ -212,30 +224,69 @@ library(bigPCAcpp)
 set.seed(42)
 mat <- matrix(rnorm(200), nrow = 40, ncol = 5)
 mat[1, 1] <- 15  # introduce an outlier
-
-# Robust PCA keeps the outlier from dominating the rotation
-robust <- pca_robust(mat, ncomp = 3)
-robust$explained_variance
-#> [1] 0.5610379 0.2456267 0.1933353
+mat_scaled <- scale(mat, center = TRUE, scale=TRUE)
 
 # Classical PCA on the same data highlights the impact of the outlier
-bm_small <- bigmemory::big.matrix(nrow = nrow(mat), ncol = ncol(mat), type = "double")
-bm_small[,] <- mat
-classical <- pca_bigmatrix(bm_small, center = TRUE, scale. = TRUE, ncomp = 3)
-#> Error in pca_bigmatrix(bm_small, center = TRUE, scale. = TRUE, ncomp = 3): unused argument (scale. = TRUE)
-cbind(classical = classical$rotation[1:5, 1], robust = robust$rotation[1:5, 1])
-#> Error: object 'classical' not found
+bm_small <- bigmemory::big.matrix(nrow = nrow(mat_scaled), ncol = ncol(mat_scaled), type = "double")
+bm_small[,] <- mat_scaled
+classical <- pca_bigmatrix(bm_small, center = FALSE, scale = FALSE, ncomp = 3)
+classical$explained_variance
+#> [1] 0.2940708 0.2332728 0.2031007
 
+scores_classical <- pca_scores_bigmatrix(xpMat = bm_small, rotation = classical$rotation, center = classical$center, classical$scale)
+scores_classical[1,]
+#> [1] -4.752614 -1.534966  1.578737
+
+pca_plot_contributions(pca_individual_contributions(scores_classical, classical$sdev))
+```
+
+<div class="figure">
+<img src="man/figures/README-robustsvdexample-1.png" alt="plot of chunk robustsvdexample" width="100%" />
+<p class="caption">plot of chunk robustsvdexample</p>
+</div>
+
+``` r
+
+# Robust PCA keeps the outlier from dominating the rotation
+robust <- pca_robust(mat_scaled, center = FALSE, scale = FALSE, ncomp = 3)
+robust$explained_variance
+#> [1] 0.3633363 0.3509611 0.2857026
+
+robust$scores[1,]
+#> [1] 1.025663 1.948710 2.095546
+
+pca_plot_contributions(pca_individual_contributions(robust$scores, robust$sdev))
+```
+
+<div class="figure">
+<img src="man/figures/README-robustsvdexample-2.png" alt="plot of chunk robustsvdexample" width="100%" />
+<p class="caption">plot of chunk robustsvdexample</p>
+</div>
+
+``` r
+
+cbind(classical = classical$rotation[1:5, 1], robust = robust$rotation[1:5, 1])
+#>       classical     robust
+#> [1,] -0.5793644 0.01128235
+#> [2,] -0.3121420 0.59547597
+#> [3,] -0.5716000 0.77399456
+#> [4,]  0.4071138 0.18028142
+#> [5,]  0.2728298 0.11709868
+```
+
+
+``` r
 # Classical SVD on a file-backed big.matrix
-bm <- bigmemory::filebacked.big.matrix(200, 10, type = "double")
-#> Error in bigmemory::filebacked.big.matrix(200, 10, type = "double"): You must specify a backing file
+path <- tempfile(fileext = ".bin")
+desc <- paste0(path, ".desc")
+
+bm <- bigmemory::filebacked.big.matrix(200, 10, type = "double", backingfile = 
+      basename(path), backingpath = dirname(path), descriptorfile = basename(desc))
 bm[,] <- matrix(rnorm(2000), nrow = 200)
-#> Error in SetElements.bm(x, i, j, value): Matrix dimensions do not agree with big.matrix instance set size.
 svd_stream <- svd_bigmatrix(bm, nu = 3, nv = 3)
 svd_stream$d
-#>  [1] 36.26467 36.02548 35.11987 34.54261 34.18348 33.94098 33.44267 33.35246 32.58666 32.25824 32.11332 31.77055
-#> [13] 31.48171 31.39417 30.61438 30.36906 30.12348 29.84740 29.67172 29.00646 28.67806 28.25614 27.99738 27.47180
-#> [25] 27.08349
+#>  [1] 16.66256 15.90085 15.80823 14.84659 13.99062 13.52699 13.06717 12.61343
+#>  [9] 12.15871 11.63997
 
 # Direct access to the robust SVD routine
 svd_out <- svd_robust(mat, ncomp = 3)
@@ -244,6 +295,7 @@ svd_out$d
 svd_out$weights[1:6]
 #> [1] 1 1 1 1 1 1
 ```
+
 
 Robust decompositions down-weight the contaminated observations while the
 classical stream demonstrates how to fetch singular vectors without materialising
@@ -268,12 +320,18 @@ library(bigPCAcpp)
 set.seed(123)
 bm <- bigmemory::big.matrix(500, 6, type = "double")
 bm[,] <- matrix(rnorm(500 * 6), nrow = 500)
-res <- pca_bigmatrix(bm, center = TRUE, scale. = TRUE)
-#> Error in pca_bigmatrix(bm, center = TRUE, scale. = TRUE): unused argument (scale. = TRUE)
+res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
 
 # Scree plot of explained variance
 pca_plot_scree(res)
-#> Error in pca_plot_scree(res): `pca_result` must contain `sdev` and `explained_variance` components
+```
+
+<div class="figure">
+<img src="man/figures/README-plotexamples-1.png" alt="plot of chunk plotexamples" width="100%" />
+<p class="caption">plot of chunk plotexamples</p>
+</div>
+
+``` r
 
 # Scatter plot of sampled scores on PCs 1 and 2
 pca_plot_scores(
@@ -285,9 +343,14 @@ pca_plot_scores(
   max_points = 2000L,
   seed = 2024
 )
-#> Warning in sweep(block, 2, center, "-"): STATS is longer than the extent of 'dim(x)[MARGIN]'
-#> Warning in sweep(block, 2, safe_scale, "/"): STATS is longer than the extent of 'dim(x)[MARGIN]'
-#> Error in block %*% rot[, comps, drop = FALSE]: non-conformable arguments
+```
+
+<div class="figure">
+<img src="man/figures/README-plotexamples-2.png" alt="plot of chunk plotexamples" width="100%" />
+<p class="caption">plot of chunk plotexamples</p>
+</div>
+
+``` r
 
 # Contribution bar plot for the leading component
 loadings <- pca_variable_loadings(res$rotation, res$sdev)
@@ -296,20 +359,20 @@ pca_plot_contributions(contrib, component = 1L, top_n = 10L)
 ```
 
 <div class="figure">
-<img src="man/figures/README-plotexamples-1.png" alt="plot of chunk plotexamples" width="100%" />
+<img src="man/figures/README-plotexamples-3.png" alt="plot of chunk plotexamples" width="100%" />
 <p class="caption">plot of chunk plotexamples</p>
 </div>
 
 ``` r
 
 # Correlation circle for the first two components
-correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd)
-#> Error: Not compatible with requested type: [type=NULL; target=double].
+correlations <- pca_variable_correlations(res$rotation, res$sdev, 
+res$column_sd, res$scale)
 pca_plot_correlation_circle(correlations, components = c(1L, 2L))
 ```
 
 <div class="figure">
-<img src="man/figures/README-plotexamples-2.png" alt="plot of chunk plotexamples" width="100%" />
+<img src="man/figures/README-plotexamples-4.png" alt="plot of chunk plotexamples" width="100%" />
 <p class="caption">plot of chunk plotexamples</p>
 </div>
 
@@ -320,10 +383,13 @@ scores <- res$scores
 if (is.null(scores)) {
   scores <- pca_scores_bigmatrix(bm, res$rotation, center = res$center, scale = res$scale)
 }
-#> Error: Rotation matrix and big.matrix dimensions are incompatible
 pca_plot_biplot(scores, loadings, components = c(1L, 2L))
-#> Error in if (ncol_scores < max(comps)) {: argument is of length zero
 ```
+
+<div class="figure">
+<img src="man/figures/README-plotexamples-5.png" alt="plot of chunk plotexamples" width="100%" />
+<p class="caption">plot of chunk plotexamples</p>
+</div>
 
 ## Citation
 

@@ -1158,13 +1158,15 @@ namespace {
 NumericMatrix compute_loadings(const NumericMatrix& rotation,
                                const NumericVector& sdev,
                                const NumericVector& scale_vec,
-                               bool use_scale) {
+                               bool use_scale,
+                               bool skip_scale_adjustment) {
   const int p = rotation.nrow();
   const int k = rotation.ncol();
   if (sdev.size() < k) {
     stop("Length of sdev must be at least the number of components");
   }
-  if (use_scale && scale_vec.size() != p) {
+  const bool apply_scale = use_scale && !skip_scale_adjustment;
+  if (apply_scale && scale_vec.size() != p) {
     stop("Length of scale vector must match the number of variables");
   }
 
@@ -1173,7 +1175,7 @@ NumericMatrix compute_loadings(const NumericMatrix& rotation,
     double sd = sdev[comp];
     for (int var = 0; var < p; ++var) {
       double value = rotation(var, comp) * sd;
-      if (use_scale) {
+      if (apply_scale) {
         const double denom = scale_vec[var];
         if (std::abs(denom) > std::numeric_limits<double>::min()) {
           value /= denom;
@@ -1191,14 +1193,15 @@ NumericMatrix compute_loadings(const NumericMatrix& rotation,
 NumericMatrix pca_variable_loadings(const NumericMatrix& rotation,
                                     const NumericVector& sdev) {
   NumericVector empty_scale;
-  return compute_loadings(rotation, sdev, empty_scale, false);
+  return compute_loadings(rotation, sdev, empty_scale, false, false);
 }
 
 // [[Rcpp::export(name = ".pca_variable_correlations")]]
 NumericMatrix pca_variable_correlations(const NumericMatrix& rotation,
                                         const NumericVector& sdev,
-                                        const NumericVector& column_sd) {
-  return compute_loadings(rotation, sdev, column_sd, true);
+                                        const NumericVector& column_sd,
+                                        bool scaled_input) {
+  return compute_loadings(rotation, sdev, column_sd, true, scaled_input);
 }
 
 // [[Rcpp::export(name = ".pca_variable_contributions")]]
@@ -1531,6 +1534,7 @@ SEXP pca_variable_loadings_stream_bigmatrix(SEXP xpRotation,
 SEXP pca_variable_correlations_stream_bigmatrix(SEXP xpRotation,
                                                 const NumericVector& sdev,
                                                 const NumericVector& column_sd,
+                                                bool scaled_input,
                                                 SEXP xpDest) {
   Rcpp::XPtr<BigMatrix> rotation_ptr(xpRotation);
   Rcpp::XPtr<BigMatrix> dest_ptr(xpDest);
@@ -1540,7 +1544,8 @@ SEXP pca_variable_correlations_stream_bigmatrix(SEXP xpRotation,
   if (sdev.size() < static_cast<int>(k)) {
     stop("Length of sdev must be at least the number of components");
   }
-  if (column_sd.size() != static_cast<int>(p)) {
+  const bool apply_scale = !scaled_input;
+  if (apply_scale && column_sd.size() != static_cast<int>(p)) {
     stop("Length of column_sd must match number of variables");
   }
   ensure_double_matrix(dest_ptr, "correlations", p, k);
@@ -1550,11 +1555,15 @@ SEXP pca_variable_correlations_stream_bigmatrix(SEXP xpRotation,
   for (std::size_t comp = 0; comp < k; ++comp) {
     double sd = sdev[static_cast<R_xlen_t>(comp)];
     for (std::size_t var = 0; var < p; ++var) {
-      double scale_val = column_sd[static_cast<R_xlen_t>(var)];
-      if (std::abs(scale_val) <= std::numeric_limits<double>::min()) {
-        dest_accessor[comp][var] = 0.0;
+      if (apply_scale) {
+        double scale_val = column_sd[static_cast<R_xlen_t>(var)];
+        if (std::abs(scale_val) <= std::numeric_limits<double>::min()) {
+          dest_accessor[comp][var] = 0.0;
+        } else {
+          dest_accessor[comp][var] = (rotation_accessor[comp][var] * sd) / scale_val;
+        }
       } else {
-        dest_accessor[comp][var] = (rotation_accessor[comp][var] * sd) / scale_val;
+        dest_accessor[comp][var] = rotation_accessor[comp][var] * sd;
       }
     }
   }

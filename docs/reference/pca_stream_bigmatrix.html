@@ -76,7 +76,13 @@ materialising dense R matrices.</p>
 <span></span>
 <span><span class="fu">pca_variable_loadings_stream_bigmatrix</span><span class="op">(</span><span class="va">xpRotation</span>, <span class="va">sdev</span>, <span class="va">xpDest</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">pca_variable_correlations_stream_bigmatrix</span><span class="op">(</span><span class="va">xpRotation</span>, <span class="va">sdev</span>, <span class="va">column_sd</span>, <span class="va">xpDest</span><span class="op">)</span></span>
+<span><span class="fu">pca_variable_correlations_stream_bigmatrix</span><span class="op">(</span></span>
+<span>  <span class="va">xpRotation</span>,</span>
+<span>  <span class="va">sdev</span>,</span>
+<span>  <span class="va">column_sd</span>,</span>
+<span>  scale <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">xpDest</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">pca_variable_contributions_stream_bigmatrix</span><span class="op">(</span><span class="va">xpLoadings</span>, <span class="va">xpDest</span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -102,8 +108,9 @@ to stream from.</p></dd>
 
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
-<dd><p>For <code><a href="pca_bigmatrix.html">pca_scores_bigmatrix()</a></code>, a numeric vector of scaling
-factors (optional). Scaling requires <code>center</code> to be supplied.</p></dd>
+<dd><p>Optional numeric vector of scaling factors returned by
+<code>pca_stream_bigmatrix()</code> or <code><a href="pca_bigmatrix.html">pca_bigmatrix()</a></code>. When supplied, correlations
+are reported on the scaled data without dividing by <code>column_sd</code>.</p></dd>
 
 
 <dt id="arg-ncomp">ncomp<a class="anchor" aria-label="anchor" href="#arg-ncomp"></a></dt>
@@ -158,7 +165,7 @@ destination <code>big.matrix</code> that stores the computed quantity.</p></dd>
 
 <dt id="arg-column-sd">column_sd<a class="anchor" aria-label="anchor" href="#arg-column-sd"></a></dt>
 <dd><p>A numeric vector of variable standard deviations used to
-scale the correlations.</p></dd>
+scale the correlations when the PCA was performed on unscaled data.</p></dd>
 
 
 <dt id="arg-xploadings">xpLoadings<a class="anchor" aria-label="anchor" href="#arg-xploadings"></a></dt>
@@ -205,28 +212,29 @@ destination big.matrix.</p></li>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">scale</span>,</span></span>
 <span class="r-in"><span>    ncomp <span class="op">=</span> <span class="va">ncomp</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x10438f990&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7ec610&gt;</span>
 <span class="r-in"><span><span class="va">loadings_store</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, <span class="va">ncomp</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pca_variable_loadings_stream_bigmatrix</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">rotation_stream_bigmatrix</span>,</span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">sdev</span>,</span></span>
 <span class="r-in"><span>    <span class="va">loadings_store</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x13aa715e0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7e63a0&gt;</span>
 <span class="r-in"><span><span class="va">correlation_store</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, <span class="va">ncomp</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pca_variable_correlations_stream_bigmatrix</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">rotation_stream_bigmatrix</span>,</span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">sdev</span>,</span></span>
 <span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">column_sd</span>,</span></span>
+<span class="r-in"><span>    <span class="va">pca_stream</span><span class="op">$</span><span class="va">scale</span>,</span></span>
 <span class="r-in"><span>    <span class="va">correlation_store</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x13a82eb60&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7e7c80&gt;</span>
 <span class="r-in"><span><span class="va">contribution_store</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mat</span><span class="op">)</span>, <span class="va">ncomp</span>, type <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pca_variable_contributions_stream_bigmatrix</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">loadings_store</span>,</span></span>
 <span class="r-in"><span>    <span class="va">contribution_store</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x13a86afa0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;pointer: 0x14e7b1510&gt;</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

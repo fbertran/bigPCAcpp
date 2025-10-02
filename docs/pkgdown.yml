@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   bigPCA-benchmarks: bigPCA-benchmarks.html
   bigPCAcpp: bigPCAcpp.html
-last_built: 2025-10-02T13:25Z
+last_built: 2025-10-02T22:25Z
 urls:
   reference: https://fbertran.github.io/bigPCAcpp/reference
   article: https://fbertran.github.io/bigPCAcpp/articles

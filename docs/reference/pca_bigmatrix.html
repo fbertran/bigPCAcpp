@@ -66,7 +66,7 @@ the need to materialise large matrices.</p>
 <span></span>
 <span><span class="fu">pca_variable_loadings</span><span class="op">(</span><span class="va">rotation</span>, <span class="va">sdev</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">pca_variable_correlations</span><span class="op">(</span><span class="va">rotation</span>, <span class="va">sdev</span>, <span class="va">column_sd</span><span class="op">)</span></span>
+<span><span class="fu">pca_variable_correlations</span><span class="op">(</span><span class="va">rotation</span>, <span class="va">sdev</span>, <span class="va">column_sd</span>, scale <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">pca_variable_contributions</span><span class="op">(</span><span class="va">loadings</span><span class="op">)</span></span>
 <span></span>
@@ -131,8 +131,9 @@ as <code>mat@address</code> that references the source <code>big.matrix</code>.<
 
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
-<dd><p>For <code>pca_scores_bigmatrix()</code>, a numeric vector of scaling
-factors (optional). Scaling requires <code>center</code> to be supplied.</p></dd>
+<dd><p>Optional numeric vector of scaling factors returned by
+<code>pca_bigmatrix()</code>. If supplied, it indicates the PCA was performed on
+standardised variables.</p></dd>
 
 
 <dt id="arg-ncomp">ncomp<a class="anchor" aria-label="anchor" href="#arg-ncomp"></a></dt>
@@ -153,7 +154,8 @@ additional memory.</p></dd>
 
 <dt id="arg-column-sd">column_sd<a class="anchor" aria-label="anchor" href="#arg-column-sd"></a></dt>
 <dd><p>A numeric vector with the marginal standard deviation of
-each original variable.</p></dd>
+each original variable. When <code>scale</code> is supplied, correlations are computed
+on the standardised scale without rescaling by <code>column_sd</code>.</p></dd>
 
 
 <dt id="arg-loadings">loadings<a class="anchor" aria-label="anchor" href="#arg-loadings"></a></dt>
@@ -288,7 +290,7 @@ streaming variants <code><a href="pca_stream_bigmatrix.html">pca_stream_bigmatri
 <span class="r-in"><span><span class="va">pca</span> <span class="op">&lt;-</span> <span class="fu">pca_bigmatrix</span><span class="op">(</span><span class="va">mat</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale <span class="op">=</span> <span class="cn">TRUE</span>, ncomp <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu">pca_scores_bigmatrix</span><span class="op">(</span><span class="va">mat</span>, <span class="va">pca</span><span class="op">$</span><span class="va">rotation</span>, <span class="va">pca</span><span class="op">$</span><span class="va">center</span>, <span class="va">pca</span><span class="op">$</span><span class="va">scale</span>, ncomp <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">loadings</span> <span class="op">&lt;-</span> <span class="fu">pca_variable_loadings</span><span class="op">(</span><span class="va">pca</span><span class="op">$</span><span class="va">rotation</span>, <span class="va">pca</span><span class="op">$</span><span class="va">sdev</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">correlations</span> <span class="op">&lt;-</span> <span class="fu">pca_variable_correlations</span><span class="op">(</span><span class="va">pca</span><span class="op">$</span><span class="va">rotation</span>, <span class="va">pca</span><span class="op">$</span><span class="va">sdev</span>, <span class="va">pca</span><span class="op">$</span><span class="va">column_sd</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">correlations</span> <span class="op">&lt;-</span> <span class="fu">pca_variable_correlations</span><span class="op">(</span><span class="va">pca</span><span class="op">$</span><span class="va">rotation</span>, <span class="va">pca</span><span class="op">$</span><span class="va">sdev</span>, <span class="va">pca</span><span class="op">$</span><span class="va">column_sd</span>, <span class="va">pca</span><span class="op">$</span><span class="va">scale</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">contributions</span> <span class="op">&lt;-</span> <span class="fu">pca_variable_contributions</span><span class="op">(</span><span class="va">loadings</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>scores <span class="op">=</span> <span class="va">scores</span>, loadings <span class="op">=</span> <span class="va">loadings</span>, correlations <span class="op">=</span> <span class="va">correlations</span>,</span></span>
 <span class="r-in"><span>     contributions <span class="op">=</span> <span class="va">contributions</span><span class="op">)</span></span></span>
@@ -314,10 +316,10 @@ streaming variants <code><a href="pca_stream_bigmatrix.html">pca_stream_bigmatri
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $correlations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>            [,1]       [,2]       [,3]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  0.8982856  0.2843364  0.3606615</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]  0.7396557 -0.4865261  0.3202821</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] -0.8136972  0.3983915  0.5590143</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [4,]  1.4378639  1.0913001 -0.3899587</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  0.8567704  0.2711956  0.3439932</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]  0.7678169 -0.5050498  0.3324763</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3,] -0.7573969  0.3708264  0.5203357</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [4,]  0.7581891  0.5754452 -0.2056261</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $contributions</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           [,1]       [,2]       [,3]</span>

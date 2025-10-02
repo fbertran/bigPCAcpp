@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Calque_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 1024 1024">
+  <!-- Generator: Adobe Illustrator 29.8.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 2)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2, .st3, .st4, .st5 {
+        fill: none;
+      }
+
+      .st6, .st7, .st8, .st9, .st10, .st11, .st1, .st12, .st13, .st14, .st15, .st3, .st16, .st4, .st17, .st18, .st19, .st5 {
+        isolation: isolate;
+      }
+
+      .st6, .st14, .st4, .st20 {
+        opacity: .9;
+      }
+
+      .st7 {
+        opacity: .61;
+      }
+
+      .st7, .st8, .st9, .st10, .st11, .st19 {
+        fill: #10b981;
+      }
+
+      .st8 {
+        opacity: .53;
+      }
+
+      .st9 {
+        opacity: .69;
+      }
+
+      .st10 {
+        opacity: .77;
+      }
+
+      .st11 {
+        opacity: .85;
+      }
+
+      .st21 {
+        filter: url(#soft);
+      }
+
+      .st1 {
+        opacity: .55;
+        stroke-width: 2px;
+      }
+
+      .st1, .st2 {
+        stroke: #fff;
+      }
+
+      .st2, .st4 {
+        stroke-width: 10px;
+      }
+
+      .st13, .st14 {
+        font-size: 40px;
+      }
+
+      .st13, .st14, .st18 {
+        font-family: MyriadPro-Regular, 'Myriad Pro';
+      }
+
+      .st13, .st15, .st17 {
+        fill: #7aa2ff;
+      }
+
+      .st14, .st16, .st18 {
+        fill: #e7ecf7;
+      }
+
+      .st15, .st16, .st19 {
+        font-family: Arial-BoldMT, Arial;
+        font-size: 88px;
+        font-weight: 700;
+      }
+
+      .st3 {
+        stroke-width: 3px;
+      }
+
+      .st3, .st5 {
+        opacity: .6;
+        stroke: #e7ecf7;
+      }
+
+      .st4 {
+        stroke: #7aa2ff;
+      }
+
+      .st4, .st5 {
+        stroke-linecap: round;
+      }
+
+      .st17 {
+        opacity: .95;
+      }
+
+      .st22 {
+        fill: #cfe3ff;
+      }
+
+      .st23 {
+        fill: #0b1020;
+      }
+
+      .st18 {
+        font-size: 28px;
+        opacity: .72;
+      }
+
+      .st24 {
+        clip-path: url(#clippath);
+      }
+
+      .st5 {
+        stroke-width: 6px;
+      }
+    </style>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" flood-color="#ffffff" flood-opacity="0.18" stdDeviation="8"/>
+    </filter>
+    <clipPath id="clippath">
+      <polygon class="st0" points="884.39 727 512 942 139.61 727 139.61 297 512 82 884.39 297 884.39 727"/>
+    </clipPath>
+  </defs>
+  <g class="st21">
+    <polygon class="st23" points="893.45 732 512 952 130.55 732 130.55 292 512 72 893.45 292 893.45 732"/>
+    <polygon class="st2" points="893.45 732 512 952 130.55 732 130.55 292 512 72 893.45 292 893.45 732"/>
+  </g>
+  <g class="st24">
+    <g>
+      <line class="st4" x1="227.6" y1="658.6" x2="796.4" y2="421.4"/>
+      <polygon class="st17" points="796.4 421.4 778.9 424.8 788.3 438.1 796.4 421.4"/>
+      <line class="st5" x1="465.7" y1="307.7" x2="548.3" y2="712.3"/>
+      <rect class="st11" x="732" y="560" width="36" height="220" rx="6" ry="6"/>
+      <rect class="st10" x="780" y="660" width="36" height="120" rx="6" ry="6"/>
+      <rect class="st9" x="828" y="720" width="36" height="60" rx="6" ry="6"/>
+      <rect class="st7" x="876" y="750" width="36" height="30" rx="6" ry="6"/>
+      <rect class="st8" x="924" y="766" width="36" height="14" rx="6" ry="6"/>
+      <text class="st18" transform="translate(855.21 820)"><tspan x="0" y="0">λ</tspan></text>
+      <rect class="st3" x="168.59" y="269.63" width="150" height="62" rx="12" ry="12" transform="translate(-119.96 168.16) rotate(-30.96)"/>
+      <g class="st6">
+        <text class="st14" transform="translate(221.4 327.94) rotate(-30.96)"><tspan x="0" y="0">C</tspan></text>
+        <text class="st13" transform="translate(241.64 315.8) rotate(-30.96)"><tspan x="0" y="0">++</tspan></text>
+      </g>
+      <g class="st20">
+        <circle class="st22" cx="360" cy="620" r="6"/>
+        <circle class="st22" cx="390" cy="600" r="6"/>
+        <circle class="st22" cx="430" cy="570" r="6"/>
+        <circle class="st22" cx="470" cy="555" r="6"/>
+        <circle class="st22" cx="510" cy="535" r="6"/>
+        <circle class="st22" cx="550" cy="520" r="6"/>
+        <circle class="st22" cx="590" cy="500" r="6"/>
+        <circle class="st22" cx="630" cy="480" r="6"/>
+        <circle class="st22" cx="670" cy="455" r="6"/>
+        <circle class="st22" cx="710" cy="430" r="6"/>
+        <circle class="st22" cx="420" cy="650" r="6"/>
+        <circle class="st22" cx="520" cy="600" r="6"/>
+        <circle class="st22" cx="600" cy="560" r="6"/>
+        <circle class="st22" cx="680" cy="520" r="6"/>
+      </g>
+    </g>
+  </g>
+  <g class="st12">
+    <text class="st16" transform="translate(270 790)"><tspan x="0" y="0">Big</tspan></text>
+    <text class="st15" transform="translate(411.75 790)"><tspan x="0" y="0">PCA</tspan></text>
+    <text class="st19" transform="translate(597.55 790)"><tspan x="0" y="0">cpp</tspan></text>
+  </g>
+  <polygon class="st1" points="884.39 727 512 942 139.61 727 139.61 297 512 82 884.39 297 884.39 727"/>
+</svg>

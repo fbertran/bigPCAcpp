@@ -35,7 +35,13 @@ pca_scores_stream_bigmatrix(
 
 pca_variable_loadings_stream_bigmatrix(xpRotation, sdev, xpDest)
 
-pca_variable_correlations_stream_bigmatrix(xpRotation, sdev, column_sd, xpDest)
+pca_variable_correlations_stream_bigmatrix(
+  xpRotation,
+  sdev,
+  column_sd,
+  scale = NULL,
+  xpDest
+)
 
 pca_variable_contributions_stream_bigmatrix(xpLoadings, xpDest)
 }
@@ -50,8 +56,9 @@ to stream from.}
 \item{center}{For \code{pca_scores_bigmatrix()}, a numeric vector of column means
 (optional).}
 
-\item{scale}{For \code{pca_scores_bigmatrix()}, a numeric vector of scaling
-factors (optional). Scaling requires \code{center} to be supplied.}
+\item{scale}{Optional numeric vector of scaling factors returned by
+\code{\link[=pca_stream_bigmatrix]{pca_stream_bigmatrix()}} or \code{\link[=pca_bigmatrix]{pca_bigmatrix()}}. When supplied, correlations
+are reported on the scaled data without dividing by \code{column_sd}.}
 
 \item{ncomp}{Number of components to retain. Use a non-positive value to keep
 all components returned by the decomposition.}
@@ -84,7 +91,7 @@ destination \code{big.matrix} that stores the computed quantity.}
 \code{sdev} element from \code{\link[=pca_bigmatrix]{pca_bigmatrix()}}.}
 
 \item{column_sd}{A numeric vector of variable standard deviations used to
-scale the correlations.}
+scale the correlations when the PCA was performed on unscaled data.}
 
 \item{xpLoadings}{For \code{pca_variable_contributions_stream_bigmatrix()}, the
 loadings matrix supplied as a \code{big.matrix} or external pointer.}
@@ -146,6 +153,7 @@ pca_variable_correlations_stream_bigmatrix(
     pca_stream$rotation_stream_bigmatrix,
     pca_stream$sdev,
     pca_stream$column_sd,
+    pca_stream$scale,
     correlation_store
 )
 contribution_store <- bigmemory::big.matrix(ncol(mat), ncomp, type = "double")

@@ -16,13 +16,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-# bigPCAcpp
+# bigPCAcpp <img src="man/figures/BigPCAcpp_hex_dark.svg" align="right" width="200"/>
 
 # Principal component analysis for bigmemory matrices
 ## Frédéric Bertrand
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml)
+[![R-hub](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml)
 <!-- badges: end -->
 
 The **bigPCAcpp** package provides high performance principal component
@@ -55,7 +56,7 @@ accumulation and LAPACK eigen decompositions. Current features include
 
 You can install the development version of **bigPCAcpp** from GitHub with:
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 # install.packages("devtools")
 devtools::install_github("fbertran/bigPCAcpp")
 ```
@@ -64,7 +65,7 @@ If you prefer a local source install, clone the repository and run:
 
 ```{r, eval = FALSE}
 R CMD build bigPCAcpp
-R CMD INSTALL bigPCAcpp_0.0.1.tar.gz
+R CMD INSTALL bigPCAcpp_0.9.0.tar.gz
 ```
 
 ## Options
@@ -97,24 +98,28 @@ bm <- bigmemory::big.matrix(n, p, type = "double")
 bm[,] <- matrix(rnorm(n * p), nrow = n)
 
 # Run PCA and extract eigenvalues and rotation
-res <- pca_bigmatrix(bm, center = TRUE, scale. = TRUE)
+res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
+res$eigenvalues
 res$importance
 res$rotation[1:5, 1:3]
 
-# Generate PCA scores in bigmemory-backed storage
-scores <- bigmemory::filebacked.big.matrix(n, ncol = 3, type = "double")
-pca_scores_stream_bigmatrix(
+# Generate PCA scores in bigmemory storage
+scores <- bigmemory::big.matrix(
+  nrow = n,
+  ncol = 3,
+  type = "double"
+)
+
+(pca_scores_bigmatrix(
   bm,
-  scores,
-  res$rotation[, 1:3],
+  res$rotation,
   center = res$center,
   scale = res$scale
-)
-scores[1:5, ]
+))[1:6,1:6]
 
-# Compare with prcomp()
-pr <- prcomp(bm[], center = TRUE, scale. = TRUE)
-all.equal(unclass(pr$rotation)[, 1:3], res$rotation[, 1:3], tolerance = 1e-6)
+# Compare sum of absolute values with prcomp()
+pr <- prcomp(bm[], center = TRUE, scale = TRUE)
+sum(abs(abs(pr$rotation[, 1:3])-abs(res$rotation[, 1:3])))<10^(-6)
 ```
 
 `pca_bigmatrix()` can also focus on a subset of leading components while
@@ -126,15 +131,21 @@ library(bigmemory)
 library(bigPCAcpp)
 
 set.seed(2025)
-bm <- bigmemory::filebacked.big.matrix(nrow = 1500, ncol = 40, type = "double")
+bm <- bigmemory::big.matrix(nrow = 1500, ncol = 40, type = "double")
 bm[,] <- matrix(rnorm(1500 * 40), nrow = 1500)
 
 # Request only the first four components
-top_pca <- pca_bigmatrix(bm, center = TRUE, scale. = TRUE, ncomp = 4)
+top_pca <- pca_bigmatrix(bm, center = TRUE, scale = TRUE, ncomp = 4)
 top_pca$sdev
 
 # Stream the corresponding scores into a file-backed allocation
-scores_fb <- bigmemory::filebacked.big.matrix(nrow = nrow(bm), ncol = 4, type = "double")
+path <- tempfile(fileext = ".bin")
+desc <- paste0(path, ".desc")
+
+scores_fb <- bigmemory::filebacked.big.matrix(nrow = nrow(bm), ncol = 4,
+             type = "double", backingfile = basename(path), backingpath =
+             dirname(path), descriptorfile = basename(desc)
+)
 pca_scores_stream_bigmatrix(
   bm,
   scores_fb,
@@ -157,7 +168,7 @@ library(bigPCAcpp)
 
 n <- 1000
 p <- 25
-bm <- bigmemory::filebacked.big.matrix(n, p, type = "double")
+bm <- bigmemory::big.matrix(n, p, type = "double")
 bm[,] <- matrix(rnorm(n * p), nrow = n)
 
 rotation <- bigmemory::big.matrix(nrow = p, ncol = p)
@@ -165,9 +176,12 @@ loadings <- bigmemory::big.matrix(nrow = p, ncol = p)
 correlations <- bigmemory::big.matrix(nrow = p, ncol = p)
 contrib <- bigmemory::big.matrix(nrow = p, ncol = p)
 
-pca_stream <- pca_stream_bigmatrix(bm, xpRotation = rotation, center = TRUE, scale = FALSE)
-pca_variable_loadings_stream_bigmatrix(rotation, pca_stream$sdev, loadings)
-pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev, correlations)
+pca_stream <- pca_stream_bigmatrix(bm, xpRotation = rotation, 
+                                   center = TRUE, scale = FALSE)
+pca_variable_loadings_stream_bigmatrix(rotation, pca_stream$sdev,
+                                       loadings)
+pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev,
+                           pca_stream$column_sd, correlations)
 pca_variable_contributions_stream_bigmatrix(loadings, contrib)
 ```
 
@@ -188,19 +202,37 @@ library(bigPCAcpp)
 set.seed(42)
 mat <- matrix(rnorm(200), nrow = 40, ncol = 5)
 mat[1, 1] <- 15  # introduce an outlier
-
-# Robust PCA keeps the outlier from dominating the rotation
-robust <- pca_robust(mat, ncomp = 3)
-robust$explained_variance
+mat_scaled <- scale(mat, center = TRUE, scale=TRUE)
 
 # Classical PCA on the same data highlights the impact of the outlier
-bm_small <- bigmemory::big.matrix(nrow = nrow(mat), ncol = ncol(mat), type = "double")
-bm_small[,] <- mat
-classical <- pca_bigmatrix(bm_small, center = TRUE, scale. = TRUE, ncomp = 3)
-cbind(classical = classical$rotation[1:5, 1], robust = robust$rotation[1:5, 1])
+bm_small <- bigmemory::big.matrix(nrow = nrow(mat_scaled), ncol = ncol(mat_scaled), type = "double")
+bm_small[,] <- mat_scaled
+classical <- pca_bigmatrix(bm_small, center = FALSE, scale = FALSE, ncomp = 3)
+classical$explained_variance
 
+scores_classical <- pca_scores_bigmatrix(xpMat = bm_small, rotation = classical$rotation, center = classical$center, classical$scale)
+scores_classical[1,]
+
+pca_plot_contributions(pca_individual_contributions(scores_classical, classical$sdev))
+
+# Robust PCA keeps the outlier from dominating the rotation
+robust <- pca_robust(mat_scaled, center = FALSE, scale = FALSE, ncomp = 3)
+robust$explained_variance
+
+robust$scores[1,]
+
+pca_plot_contributions(pca_individual_contributions(robust$scores, robust$sdev))
+
+cbind(classical = classical$rotation[1:5, 1], robust = robust$rotation[1:5, 1])
+```
+
+```{r robustsvdexample2, eval = TRUE}
 # Classical SVD on a file-backed big.matrix
-bm <- bigmemory::filebacked.big.matrix(200, 10, type = "double")
+path <- tempfile(fileext = ".bin")
+desc <- paste0(path, ".desc")
+
+bm <- bigmemory::filebacked.big.matrix(200, 10, type = "double", backingfile = 
+      basename(path), backingpath = dirname(path), descriptorfile = basename(desc))
 bm[,] <- matrix(rnorm(2000), nrow = 200)
 svd_stream <- svd_bigmatrix(bm, nu = 3, nv = 3)
 svd_stream$d
@@ -210,6 +242,7 @@ svd_out <- svd_robust(mat, ncomp = 3)
 svd_out$d
 svd_out$weights[1:6]
 ```
+
 
 Robust decompositions down-weight the contaminated observations while the
 classical stream demonstrates how to fetch singular vectors without materialising
@@ -233,7 +266,7 @@ library(bigPCAcpp)
 set.seed(123)
 bm <- bigmemory::big.matrix(500, 6, type = "double")
 bm[,] <- matrix(rnorm(500 * 6), nrow = 500)
-res <- pca_bigmatrix(bm, center = TRUE, scale. = TRUE)
+res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
 
 # Scree plot of explained variance
 pca_plot_scree(res)
@@ -255,7 +288,8 @@ contrib <- pca_variable_contributions(loadings)
 pca_plot_contributions(contrib, component = 1L, top_n = 10L)
 
 # Correlation circle for the first two components
-correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd)
+correlations <- pca_variable_correlations(res$rotation, res$sdev, 
+res$column_sd, res$scale)
 pca_plot_correlation_circle(correlations, components = c(1L, 2L))
 
 # Biplot combining scores and loadings

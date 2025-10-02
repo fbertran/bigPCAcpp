@@ -21,8 +21,8 @@
     .Call(`_bigPCAcpp_pca_variable_loadings`, rotation, sdev)
 }
 
-.pca_variable_correlations <- function(rotation, sdev, column_sd) {
-    .Call(`_bigPCAcpp_pca_variable_correlations`, rotation, sdev, column_sd)
+.pca_variable_correlations <- function(rotation, sdev, column_sd, scaled_input) {
+    .Call(`_bigPCAcpp_pca_variable_correlations`, rotation, sdev, column_sd, scaled_input)
 }
 
 .pca_variable_contributions <- function(loadings) {
@@ -57,8 +57,8 @@
     .Call(`_bigPCAcpp_pca_variable_loadings_stream_bigmatrix`, xpRotation, sdev, xpDest)
 }
 
-.pca_variable_correlations_stream_bigmatrix <- function(xpRotation, sdev, column_sd, xpDest) {
-    .Call(`_bigPCAcpp_pca_variable_correlations_stream_bigmatrix`, xpRotation, sdev, column_sd, xpDest)
+.pca_variable_correlations_stream_bigmatrix <- function(xpRotation, sdev, column_sd, scaled_input, xpDest) {
+    .Call(`_bigPCAcpp_pca_variable_correlations_stream_bigmatrix`, xpRotation, sdev, column_sd, scaled_input, xpDest)
 }
 
 .pca_variable_contributions_stream_bigmatrix <- function(xpLoadings, xpDest) {

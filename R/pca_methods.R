@@ -168,7 +168,7 @@ plot.bigpca <- function(x, y, type = c("scree", "contributions", "correlation_ci
     }
 
     if (identical(type, "correlation_circle")) {
-        correlations <- pca_variable_correlations(x$rotation, x$sdev, x$column_sd)
+        correlations <- pca_variable_correlations(x$rotation, x$sdev, x$column_sd, x$scale)
         return(invisible(pca_plot_correlation_circle(correlations, components = components,
                                                      draw = draw, ...)))
     }

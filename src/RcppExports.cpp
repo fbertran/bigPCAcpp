@@ -88,15 +88,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // pca_variable_correlations
-NumericMatrix pca_variable_correlations(const NumericMatrix& rotation, const NumericVector& sdev, const NumericVector& column_sd);
-RcppExport SEXP _bigPCAcpp_pca_variable_correlations(SEXP rotationSEXP, SEXP sdevSEXP, SEXP column_sdSEXP) {
+NumericMatrix pca_variable_correlations(const NumericMatrix& rotation, const NumericVector& sdev, const NumericVector& column_sd, bool scaled_input);
+RcppExport SEXP _bigPCAcpp_pca_variable_correlations(SEXP rotationSEXP, SEXP sdevSEXP, SEXP column_sdSEXP, SEXP scaled_inputSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericMatrix& >::type rotation(rotationSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type sdev(sdevSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type column_sd(column_sdSEXP);
-    rcpp_result_gen = Rcpp::wrap(pca_variable_correlations(rotation, sdev, column_sd));
+    Rcpp::traits::input_parameter< bool >::type scaled_input(scaled_inputSEXP);
+    rcpp_result_gen = Rcpp::wrap(pca_variable_correlations(rotation, sdev, column_sd, scaled_input));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -213,16 +214,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // pca_variable_correlations_stream_bigmatrix
-SEXP pca_variable_correlations_stream_bigmatrix(SEXP xpRotation, const NumericVector& sdev, const NumericVector& column_sd, SEXP xpDest);
-RcppExport SEXP _bigPCAcpp_pca_variable_correlations_stream_bigmatrix(SEXP xpRotationSEXP, SEXP sdevSEXP, SEXP column_sdSEXP, SEXP xpDestSEXP) {
+SEXP pca_variable_correlations_stream_bigmatrix(SEXP xpRotation, const NumericVector& sdev, const NumericVector& column_sd, bool scaled_input, SEXP xpDest);
+RcppExport SEXP _bigPCAcpp_pca_variable_correlations_stream_bigmatrix(SEXP xpRotationSEXP, SEXP sdevSEXP, SEXP column_sdSEXP, SEXP scaled_inputSEXP, SEXP xpDestSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type xpRotation(xpRotationSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type sdev(sdevSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type column_sd(column_sdSEXP);
+    Rcpp::traits::input_parameter< bool >::type scaled_input(scaled_inputSEXP);
     Rcpp::traits::input_parameter< SEXP >::type xpDest(xpDestSEXP);
-    rcpp_result_gen = Rcpp::wrap(pca_variable_correlations_stream_bigmatrix(xpRotation, sdev, column_sd, xpDest));
+    rcpp_result_gen = Rcpp::wrap(pca_variable_correlations_stream_bigmatrix(xpRotation, sdev, column_sd, scaled_input, xpDest));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -259,7 +261,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bigPCAcpp_svd_bigmatrix", (DL_FUNC) &_bigPCAcpp_svd_bigmatrix, 5},
     {"_bigPCAcpp_pca_scores_bigmatrix", (DL_FUNC) &_bigPCAcpp_pca_scores_bigmatrix, 6},
     {"_bigPCAcpp_pca_variable_loadings", (DL_FUNC) &_bigPCAcpp_pca_variable_loadings, 2},
-    {"_bigPCAcpp_pca_variable_correlations", (DL_FUNC) &_bigPCAcpp_pca_variable_correlations, 3},
+    {"_bigPCAcpp_pca_variable_correlations", (DL_FUNC) &_bigPCAcpp_pca_variable_correlations, 4},
     {"_bigPCAcpp_pca_variable_contributions", (DL_FUNC) &_bigPCAcpp_pca_variable_contributions, 1},
     {"_bigPCAcpp_pca_individual_contributions", (DL_FUNC) &_bigPCAcpp_pca_individual_contributions, 3},
     {"_bigPCAcpp_pca_individual_cos2", (DL_FUNC) &_bigPCAcpp_pca_individual_cos2, 1},
@@ -268,7 +270,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bigPCAcpp_pca_stream_bigmatrix", (DL_FUNC) &_bigPCAcpp_pca_stream_bigmatrix, 6},
     {"_bigPCAcpp_pca_scores_stream_bigmatrix", (DL_FUNC) &_bigPCAcpp_pca_scores_stream_bigmatrix, 7},
     {"_bigPCAcpp_pca_variable_loadings_stream_bigmatrix", (DL_FUNC) &_bigPCAcpp_pca_variable_loadings_stream_bigmatrix, 3},
-    {"_bigPCAcpp_pca_variable_correlations_stream_bigmatrix", (DL_FUNC) &_bigPCAcpp_pca_variable_correlations_stream_bigmatrix, 4},
+    {"_bigPCAcpp_pca_variable_correlations_stream_bigmatrix", (DL_FUNC) &_bigPCAcpp_pca_variable_correlations_stream_bigmatrix, 5},
     {"_bigPCAcpp_pca_variable_contributions_stream_bigmatrix", (DL_FUNC) &_bigPCAcpp_pca_variable_contributions_stream_bigmatrix, 2},
     {"_bigPCAcpp_svd_robust_cpp", (DL_FUNC) &_bigPCAcpp_svd_robust_cpp, 5},
     {NULL, NULL, 0}

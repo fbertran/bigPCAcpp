@@ -28,7 +28,7 @@ pca_scores_bigmatrix(
 
 pca_variable_loadings(rotation, sdev)
 
-pca_variable_correlations(rotation, sdev, column_sd)
+pca_variable_correlations(rotation, sdev, column_sd, scale = NULL)
 
 pca_variable_contributions(loadings)
 
@@ -73,8 +73,9 @@ as \code{mat@address} that references the source \code{big.matrix}.}
 \item{center}{For \code{pca_scores_bigmatrix()}, a numeric vector of column means
 (optional).}
 
-\item{scale}{For \code{pca_scores_bigmatrix()}, a numeric vector of scaling
-factors (optional). Scaling requires \code{center} to be supplied.}
+\item{scale}{Optional numeric vector of scaling factors returned by
+\code{\link[=pca_bigmatrix]{pca_bigmatrix()}}. If supplied, it indicates the PCA was performed on
+standardised variables.}
 
 \item{ncomp}{Number of components to retain. Use a non-positive value to keep
 all components returned by the decomposition.}
@@ -87,7 +88,8 @@ additional memory.}
 \code{sdev} element from \code{\link[=pca_bigmatrix]{pca_bigmatrix()}}.}
 
 \item{column_sd}{A numeric vector with the marginal standard deviation of
-each original variable.}
+each original variable. When \code{scale} is supplied, correlations are computed
+on the standardised scale without rescaling by \code{column_sd}.}
 
 \item{loadings}{A numeric matrix such as the result of
 \code{\link[=pca_variable_loadings]{pca_variable_loadings()}}.}
@@ -200,7 +202,7 @@ mat <- bigmemory::as.big.matrix(matrix(rnorm(40), nrow = 10))
 pca <- pca_bigmatrix(mat, center = TRUE, scale = TRUE, ncomp = 3)
 scores <- pca_scores_bigmatrix(mat, pca$rotation, pca$center, pca$scale, ncomp = 3)
 loadings <- pca_variable_loadings(pca$rotation, pca$sdev)
-correlations <- pca_variable_correlations(pca$rotation, pca$sdev, pca$column_sd)
+correlations <- pca_variable_correlations(pca$rotation, pca$sdev, pca$column_sd, pca$scale)
 contributions <- pca_variable_contributions(loadings)
 list(scores = scores, loadings = loadings, correlations = correlations,
      contributions = contributions)

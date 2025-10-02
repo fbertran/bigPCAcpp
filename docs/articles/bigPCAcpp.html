@@ -183,7 +183,8 @@ the original data matrix in memory.</p>
 <span><span class="va">correlations</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pca_bigmatrix.html">pca_variable_correlations</a></span><span class="op">(</span></span>
 <span>  <span class="va">big_pca</span><span class="op">$</span><span class="va">rotation</span>,</span>
 <span>  <span class="va">big_pca</span><span class="op">$</span><span class="va">sdev</span>,</span>
-<span>  <span class="va">big_pca</span><span class="op">$</span><span class="va">column_sd</span></span>
+<span>  <span class="va">big_pca</span><span class="op">$</span><span class="va">column_sd</span>,</span>
+<span>  <span class="va">big_pca</span><span class="op">$</span><span class="va">scale</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">contributions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pca_bigmatrix.html">pca_variable_contributions</a></span><span class="op">(</span><span class="va">loadings</span><span class="op">)</span></span>
 <span></span>
@@ -195,20 +196,22 @@ the original data matrix in memory.</p>
 <span><span class="co">#&gt; [4,]  0.9649790 0.06399985 -0.24298265 -0.07535950</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">correlations</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            [,1]       [,2]        [,3]        [,4]</span></span>
-<span><span class="co">#&gt; [1,]  1.0749972 0.43575009  0.33289330 -0.04541427</span></span>
-<span><span class="co">#&gt; [2,] -1.0556969 2.02519970 -0.21479035  0.04078385</span></span>
-<span><span class="co">#&gt; [3,]  0.5616927 0.01326415 -0.03084294  0.06534294</span></span>
-<span><span class="co">#&gt; [4,]  1.2659817 0.08396311 -0.31877545 -0.09886615</span></span>
+<span><span class="co">#&gt; [1,]  0.8901688 0.36082989  0.27565767 -0.03760602</span></span>
+<span><span class="co">#&gt; [2,] -0.4601427 0.88271627 -0.09361987  0.01777631</span></span>
+<span><span class="co">#&gt; [3,]  0.9915552 0.02341519 -0.05444699  0.11534978</span></span>
+<span><span class="co">#&gt; [4,]  0.9649790 0.06399985 -0.24298265 -0.07535950</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">contributions</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            [,1]         [,2]       [,3]       [,4]</span></span>
 <span><span class="co">#&gt; [1,] 0.27150969 0.1424440565 0.51777574 0.06827052</span></span>
 <span><span class="co">#&gt; [2,] 0.07254804 0.8524748749 0.05972245 0.01525463</span></span>
 <span><span class="co">#&gt; [3,] 0.33687936 0.0005998389 0.02019990 0.64232089</span></span>
-<span><span class="co">#&gt; [4,] 0.31906291 0.0044812296 0.40230191 0.27415396</span></span></code></pre></div>
-<p>Loadings match the scaled rotation matrix, correlations rescale
-loadings back onto the original variable standard deviations, and
-contributions report the relative importance of each variable within a
-component.</p>
+<span><span class="co">#&gt; [4,] 0.31906291 0.0044812296 0.40230191 0.27415396</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">correlations</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] -0.4601427  0.9915552</span></span></code></pre></div>
+<p>Loadings match the scaled rotation matrix, correlations honour
+whether the PCA was computed on standardised variables and remain
+bounded between -1 and 1, and contributions report the relative
+importance of each variable within a component.</p>
 </div>
 <div class="section level2">
 <h2 id="visualising-pca-results">Visualising PCA results<a class="anchor" aria-label="anchor" href="#visualising-pca-results"></a>
@@ -358,7 +361,7 @@ generated in batches using
 <span>  center <span class="op">=</span> <span class="va">pca</span><span class="op">$</span><span class="va">center</span>,</span>
 <span>  scale <span class="op">=</span> <span class="va">pca</span><span class="op">$</span><span class="va">scale</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;pointer: 0x11f753470&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;pointer: 0x1351fe1e0&gt;</span></span></code></pre></div>
 <p>Once the scores are stored on disk, they can be sampled and plotted
 just like the in-memory workflow:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">

@@ -150,7 +150,7 @@ test_that("pca_bigmatrix reproduces prcomp results", {
   loadings <- pca_variable_loadings(res$rotation, res$sdev)
   expect_equal(loadings, sweep(res$rotation, 2, res$sdev, `*`), tolerance = 1e-6)
 
-  correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd)
+  correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd, res$scale)
   expected_cor <- sweep(loadings, 1, res$column_sd, `/`)
   expect_equal(correlations, expected_cor, tolerance = 1e-6)
 
@@ -166,6 +166,21 @@ test_that("pca_bigmatrix reproduces prcomp results", {
 
   contributions <- pca_variable_contributions(loadings)
   expect_equal(colSums(contributions), rep(1, ncol(contributions)), tolerance = 1e-6)
+})
+
+test_that("pca_variable_correlations stay bounded for scaled inputs", {
+  set.seed(902)
+  dense <- matrix(rnorm(200), nrow = 40, ncol = 5)
+  bm <- create_big_matrix(dense)
+
+  res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
+  loadings <- pca_variable_loadings(res$rotation, res$sdev)
+  correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd, res$scale)
+
+  corr_range <- range(correlations)
+  expect_gte(corr_range[1], -1 - 1e-8)
+  expect_lte(corr_range[2], 1 + 1e-8)
+  expect_equal(correlations, loadings, tolerance = 1e-6)
 })
 
 test_that("pca_plot_biplot prepares scaled overlays", {
@@ -231,7 +246,7 @@ test_that("individual diagnostics compute contributions and cos2", {
   expect_equal(colSums(ind_contrib), rep(1, ncol(ind_contrib)), tolerance = 1e-6)
   expect_equal(rowSums(ind_cos2), rep(1, nrow(ind_cos2)), tolerance = 1e-6)
 
-  correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd)
+  correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd, res$scale)
   var_cos2 <- pca_variable_cos2(correlations)
   expect_equal(var_cos2, correlations^2, tolerance = 1e-12)
 })
@@ -402,12 +417,13 @@ test_that("streaming big.matrix writers stream PCA results", {
   pca_variable_loadings_stream_bigmatrix(rotation_dest, res$sdev, loadings_dest)
   expect_equal(loadings_dest[, ], loadings_ref, tolerance = 1e-6)
 
-  correlations_ref <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd)
+  correlations_ref <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd, res$scale)
   correlations_dest <- bigmemory::big.matrix(nrow = ncol(dense), ncol = ncol(res$rotation), type = "double")
   pca_variable_correlations_stream_bigmatrix(
     rotation_dest,
     res$sdev,
     res$column_sd,
+    res$scale,
     correlations_dest
   )
   expect_equal(correlations_dest[, ], correlations_ref, tolerance = 1e-6)
@@ -442,7 +458,7 @@ test_that("plotting helpers sample big data results", {
   contrib_data <- pca_plot_contributions(contributions, component = 1, top_n = 2, draw = FALSE)
   expect_equal(nrow(contrib_data), 2)
 
-  correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd)
+  correlations <- pca_variable_correlations(res$rotation, res$sdev, res$column_sd, res$scale)
   circle_data <- pca_plot_correlation_circle(correlations, components = c(1L, 2L), draw = FALSE)
   expect_equal(nrow(circle_data), ncol(dense))
   expect_named(circle_data, c("variable", "PC1", "PC2"))

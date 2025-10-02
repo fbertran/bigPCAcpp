@@ -116,18 +116,21 @@ loadings <- pca_variable_loadings(big_pca$rotation, big_pca$sdev)
 correlations <- pca_variable_correlations(
   big_pca$rotation,
   big_pca$sdev,
-  big_pca$column_sd
+  big_pca$column_sd,
+  big_pca$scale
 )
 contributions <- pca_variable_contributions(loadings)
 
 head(loadings)
 head(correlations)
 head(contributions)
+range(correlations)
 ```
 
-Loadings match the scaled rotation matrix, correlations rescale loadings back
-onto the original variable standard deviations, and contributions report the
-relative importance of each variable within a component.
+Loadings match the scaled rotation matrix, correlations honour whether the PCA
+was computed on standardised variables and remain bounded between -1 and 1, and
+contributions report the relative importance of each variable within a
+component.
 
 ## Visualising PCA results
 

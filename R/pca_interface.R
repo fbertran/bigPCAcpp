@@ -1457,7 +1457,7 @@ pca_spca_R <- function(x,
 #' pca <- pca_bigmatrix(mat, center = TRUE, scale = TRUE, ncomp = 3)
 #' scores <- pca_scores_bigmatrix(mat, pca$rotation, pca$center, pca$scale, ncomp = 3)
 #' loadings <- pca_variable_loadings(pca$rotation, pca$sdev)
-#' correlations <- pca_variable_correlations(pca$rotation, pca$sdev, pca$column_sd)
+#' correlations <- pca_variable_correlations(pca$rotation, pca$sdev, pca$column_sd, pca$scale)
 #' contributions <- pca_variable_contributions(loadings)
 #' list(scores = scores, loadings = loadings, correlations = correlations,
 #'      contributions = contributions)
@@ -1564,11 +1564,19 @@ pca_variable_loadings <- function(rotation, sdev) {
 #' @describeIn pca_bigmatrix Compute variable-component correlations given
 #'   column standard deviations.
 #' @param column_sd A numeric vector with the marginal standard deviation of
-#'   each original variable.
+#'   each original variable. When `scale` is supplied, correlations are computed
+#'   on the standardised scale without rescaling by `column_sd`.
+#' @param scale Optional numeric vector of scaling factors returned by
+#'   [pca_bigmatrix()]. If supplied, it indicates the PCA was performed on
+#'   standardised variables.
 #' @return A numeric matrix of correlations between variables and components.
 #' @export
-pca_variable_correlations <- function(rotation, sdev, column_sd) {
-    .pca_variable_correlations(rotation, sdev, column_sd)
+pca_variable_correlations <- function(rotation, sdev, column_sd, scale = NULL) {
+    scaled_input <- length(scale) > 0L
+    if (scaled_input && length(scale) != NROW(rotation)) {
+        stop("`scale` must have length equal to the number of variables", call. = FALSE)
+    }
+    .pca_variable_correlations(rotation, sdev, column_sd, scaled_input)
 }
 
 #' @describeIn pca_bigmatrix Derive the relative contribution of each variable
@@ -1995,6 +2003,7 @@ pca_scores_stream_bigmatrix <- function(
 #'     pca_stream$rotation_stream_bigmatrix,
 #'     pca_stream$sdev,
 #'     pca_stream$column_sd,
+#'     pca_stream$scale,
 #'     correlation_store
 #' )
 #' contribution_store <- bigmemory::big.matrix(ncol(mat), ncomp, type = "double")
@@ -2018,16 +2027,21 @@ pca_variable_loadings_stream_bigmatrix <- function(
 #'   `bigmemory::big.matrix` or external pointer containing the rotation matrix
 #'   to stream from.
 #' @param column_sd A numeric vector of variable standard deviations used to
-#'   scale the correlations.
+#'   scale the correlations when the PCA was performed on unscaled data.
+#' @param scale Optional numeric vector of scaling factors returned by
+#'   [pca_stream_bigmatrix()] or [pca_bigmatrix()]. When supplied, correlations
+#'   are reported on the scaled data without dividing by `column_sd`.
 #' @export
 pca_variable_correlations_stream_bigmatrix <- function(
         xpRotation,
         sdev,
         column_sd,
+        scale = NULL,
         xpDest) {
     rot_ptr <- resolve_big_pointer(xpRotation, "xpRotation")
     dest_ptr <- resolve_big_pointer(xpDest, "xpDest")
-    .pca_variable_correlations_stream_bigmatrix(rot_ptr, sdev, column_sd, dest_ptr)
+    scaled_input <- length(scale) > 0L
+    .pca_variable_correlations_stream_bigmatrix(rot_ptr, sdev, column_sd, scaled_input, dest_ptr)
 }
 
 #' @describeIn pca_stream_bigmatrix Stream variable contributions into a
