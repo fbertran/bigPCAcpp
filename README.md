@@ -93,19 +93,18 @@ bm[,] <- matrix(rnorm(n * p), nrow = n)
 # Run PCA and extract eigenvalues and rotation
 res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
 res$eigenvalues
-#>  [1] 1.2845439 1.2620605 1.2091376 1.1818967 1.1602022 1.1537473 1.1038259
-#>  [8] 1.0854178 1.0678532 1.0537783 1.0259519 1.0080503 0.9849999 0.9670073
-#> [15] 0.9650919 0.9483674 0.9239029 0.9036332 0.8874503 0.8771716 0.8310860
-#> [22] 0.8174111 0.7834761 0.7712611 0.7426758
+#>  [1] 1.2772679 1.2549573 1.2261127 1.2200832 1.2029447 1.1372111 1.1116603 1.0863140 1.0612750
+#> [10] 1.0430975 1.0251884 1.0036304 0.9922516 0.9661366 0.9511738 0.9342366 0.9118102 0.8894958
+#> [19] 0.8861798 0.8662711 0.8326502 0.8234052 0.7850452 0.7762024 0.7353990
 res$importance
 #> NULL
 res$rotation[1:5, 1:3]
-#>            [,1]        [,2]       [,3]
-#> [1,]  0.2467361 -0.24557824  0.2681748
-#> [2,]  0.1762556  0.11111327  0.2584223
-#> [3,] -0.2017991 -0.04409299  0.2879400
-#> [4,] -0.0266216  0.01239800 -0.4072411
-#> [5,] -0.2933579  0.26374884 -0.0539767
+#>             [,1]        [,2]      [,3]
+#> [1,] -0.13665626 -0.19398781 0.3217218
+#> [2,] -0.07597561  0.09425838 0.1678119
+#> [3,]  0.08992670  0.00729943 0.2609075
+#> [4,]  0.10200029 -0.28583284 0.2290518
+#> [5,]  0.19534252  0.32324433 0.1690638
 
 # Generate PCA scores in bigmemory storage
 scores <- bigmemory::big.matrix(
@@ -120,13 +119,13 @@ scores <- bigmemory::big.matrix(
   center = res$center,
   scale = res$scale
 ))[1:6,1:6]
-#>             [,1]       [,2]       [,3]       [,4]       [,5]        [,6]
-#> [1,]  1.36452852  0.7007380  0.5504053  1.0804175  0.6831606  1.63794188
-#> [2,] -1.98004866  1.5863879 -1.9466312 -0.3780198 -0.6156588 -0.80700382
-#> [3,]  0.52434117 -1.0393866 -1.0267544  0.9600295  0.9040187 -1.20811774
-#> [4,]  0.58223135 -2.1385763 -0.2254927 -0.1100652  0.6813038  0.07643652
-#> [5,] -0.74641531 -2.1539782  0.8830645  1.3563627  0.1888510  0.96249631
-#> [6,]  0.06082332 -0.2176821  0.4721814 -2.1389319  0.6322640  2.10164117
+#>             [,1]        [,2]        [,3]       [,4]       [,5]       [,6]
+#> [1,]  2.81870347 -0.06337779  1.99072631 -0.5920623 -1.6703024  1.6483439
+#> [2,] -0.35747573 -0.80297261 -1.07285346  0.5123663 -1.4595653  0.5980145
+#> [3,] -0.78310002  0.24236085  0.46701646 -0.2727803  0.4929943  2.2777379
+#> [4,]  1.45650763 -0.74008842 -2.57891649  0.1402697  1.5748613  1.1219994
+#> [5,] -1.56142789 -0.68169732 -0.01681349  0.1119421 -0.9571047 -1.0961306
+#> [6,]  0.05141656 -0.91365588  0.30322391 -1.4171899 -0.2089137 -2.3574471
 
 # Compare sum of absolute values with prcomp()
 pr <- prcomp(bm[], center = TRUE, scale = TRUE)
@@ -167,7 +166,7 @@ pca_scores_stream_bigmatrix(
   center = top_pca$center,
   scale = top_pca$scale
 )
-#> <pointer: 0x117099610>
+#> <pointer: 0x10f559be0>
 
 # Inspect a lightweight summary without loading the entire matrix
 colMeans(scores_fb[, 1:2])
@@ -198,12 +197,12 @@ pca_stream <- pca_stream_bigmatrix(bm, xpRotation = rotation,
                                    center = TRUE, scale = FALSE)
 pca_variable_loadings_stream_bigmatrix(rotation, pca_stream$sdev,
                                        loadings)
-#> <pointer: 0x106d12a90>
+#> <pointer: 0x138167dd0>
 pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev,
                            pca_stream$column_sd, correlations)
 #> Error in pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev, : argument "xpDest" is missing, with no default
 pca_variable_contributions_stream_bigmatrix(loadings, contrib)
-#> <pointer: 0x106d0de40>
+#> <pointer: 0x1381705f0>
 ```
 
 ### Robust PCA and singular value decompositions
@@ -285,8 +284,7 @@ bm <- bigmemory::filebacked.big.matrix(200, 10, type = "double", backingfile =
 bm[,] <- matrix(rnorm(2000), nrow = 200)
 svd_stream <- svd_bigmatrix(bm, nu = 3, nv = 3)
 svd_stream$d
-#>  [1] 16.66256 15.90085 15.80823 14.84659 13.99062 13.52699 13.06717 12.61343
-#>  [9] 12.15871 11.63997
+#>  [1] 16.66256 15.90085 15.80823 14.84659 13.99062 13.52699 13.06717 12.61343 12.15871 11.63997
 
 # Direct access to the robust SVD routine
 svd_out <- svd_robust(mat, ncomp = 3)

@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Principal Component Analysis for bigmemory Matrices">
-<meta name="description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows. Additional interfaces expose scalable singular value decomposition, robust PCA, and robust SVD algorithms so that users can explore large matrices while tempering the influence of outliers. Scalable principal component analysis is also implemented.">
-<meta property="og:description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows. Additional interfaces expose scalable singular value decomposition, robust PCA, and robust SVD algorithms so that users can explore large matrices while tempering the influence of outliers. Scalable principal component analysis is also implemented.">
+<meta name="description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows. Additional interfaces expose scalable singular value decomposition, robust PCA, and robust SVD algorithms so that users can explore large matrices while tempering the influence of outliers. Scalable principal component analysis is also implemented, Elgamal, Yabandeh, Aboulnaga, Mustafa, and Hefeeda (2015) &lt;doi:10.1145/2723372.2751520&gt;.">
+<meta property="og:description" content="High performance principal component analysis routines that operate directly on bigmemory::big.matrix objects. The package avoids materialising large matrices in memory by streaming data through BLAS and LAPACK kernels and provides helpers to derive scores, loadings, correlations, and contribution diagnostics, including utilities that stream results into bigmemory-backed matrices for file-based workflows. Additional interfaces expose scalable singular value decomposition, robust PCA, and robust SVD algorithms so that users can explore large matrices while tempering the influence of outliers. Scalable principal component analysis is also implemented, Elgamal, Yabandeh, Aboulnaga, Mustafa, and Hefeeda (2015) &lt;doi:10.1145/2723372.2751520&gt;.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -138,19 +138,18 @@
 <span><span class="co"># Run PCA and extract eigenvalues and rotation</span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pca_bigmatrix.html">pca_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">eigenvalues</span></span>
-<span><span class="co">#&gt;  [1] 1.2845439 1.2620605 1.2091376 1.1818967 1.1602022 1.1537473 1.1038259</span></span>
-<span><span class="co">#&gt;  [8] 1.0854178 1.0678532 1.0537783 1.0259519 1.0080503 0.9849999 0.9670073</span></span>
-<span><span class="co">#&gt; [15] 0.9650919 0.9483674 0.9239029 0.9036332 0.8874503 0.8771716 0.8310860</span></span>
-<span><span class="co">#&gt; [22] 0.8174111 0.7834761 0.7712611 0.7426758</span></span>
+<span><span class="co">#&gt;  [1] 1.2772679 1.2549573 1.2261127 1.2200832 1.2029447 1.1372111 1.1116603 1.0863140 1.0612750</span></span>
+<span><span class="co">#&gt; [10] 1.0430975 1.0251884 1.0036304 0.9922516 0.9661366 0.9511738 0.9342366 0.9118102 0.8894958</span></span>
+<span><span class="co">#&gt; [19] 0.8861798 0.8662711 0.8326502 0.8234052 0.7850452 0.7762024 0.7353990</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">importance</span></span>
 <span><span class="co">#&gt; NULL</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">rotation</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span></span>
-<span><span class="co">#&gt;            [,1]        [,2]       [,3]</span></span>
-<span><span class="co">#&gt; [1,]  0.2467361 -0.24557824  0.2681748</span></span>
-<span><span class="co">#&gt; [2,]  0.1762556  0.11111327  0.2584223</span></span>
-<span><span class="co">#&gt; [3,] -0.2017991 -0.04409299  0.2879400</span></span>
-<span><span class="co">#&gt; [4,] -0.0266216  0.01239800 -0.4072411</span></span>
-<span><span class="co">#&gt; [5,] -0.2933579  0.26374884 -0.0539767</span></span>
+<span><span class="co">#&gt;             [,1]        [,2]      [,3]</span></span>
+<span><span class="co">#&gt; [1,] -0.13665626 -0.19398781 0.3217218</span></span>
+<span><span class="co">#&gt; [2,] -0.07597561  0.09425838 0.1678119</span></span>
+<span><span class="co">#&gt; [3,]  0.08992670  0.00729943 0.2609075</span></span>
+<span><span class="co">#&gt; [4,]  0.10200029 -0.28583284 0.2290518</span></span>
+<span><span class="co">#&gt; [5,]  0.19534252  0.32324433 0.1690638</span></span>
 <span></span>
 <span><span class="co"># Generate PCA scores in bigmemory storage</span></span>
 <span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu">bigmemory</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/bigmemory/man/big.matrix.html" class="external-link">big.matrix</a></span><span class="op">(</span></span>
@@ -165,13 +164,13 @@
 <span>  center <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">center</span>,</span>
 <span>  scale <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">scale</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span></span>
-<span><span class="co">#&gt;             [,1]       [,2]       [,3]       [,4]       [,5]        [,6]</span></span>
-<span><span class="co">#&gt; [1,]  1.36452852  0.7007380  0.5504053  1.0804175  0.6831606  1.63794188</span></span>
-<span><span class="co">#&gt; [2,] -1.98004866  1.5863879 -1.9466312 -0.3780198 -0.6156588 -0.80700382</span></span>
-<span><span class="co">#&gt; [3,]  0.52434117 -1.0393866 -1.0267544  0.9600295  0.9040187 -1.20811774</span></span>
-<span><span class="co">#&gt; [4,]  0.58223135 -2.1385763 -0.2254927 -0.1100652  0.6813038  0.07643652</span></span>
-<span><span class="co">#&gt; [5,] -0.74641531 -2.1539782  0.8830645  1.3563627  0.1888510  0.96249631</span></span>
-<span><span class="co">#&gt; [6,]  0.06082332 -0.2176821  0.4721814 -2.1389319  0.6322640  2.10164117</span></span>
+<span><span class="co">#&gt;             [,1]        [,2]        [,3]       [,4]       [,5]       [,6]</span></span>
+<span><span class="co">#&gt; [1,]  2.81870347 -0.06337779  1.99072631 -0.5920623 -1.6703024  1.6483439</span></span>
+<span><span class="co">#&gt; [2,] -0.35747573 -0.80297261 -1.07285346  0.5123663 -1.4595653  0.5980145</span></span>
+<span><span class="co">#&gt; [3,] -0.78310002  0.24236085  0.46701646 -0.2727803  0.4929943  2.2777379</span></span>
+<span><span class="co">#&gt; [4,]  1.45650763 -0.74008842 -2.57891649  0.1402697  1.5748613  1.1219994</span></span>
+<span><span class="co">#&gt; [5,] -1.56142789 -0.68169732 -0.01681349  0.1119421 -0.9571047 -1.0961306</span></span>
+<span><span class="co">#&gt; [6,]  0.05141656 -0.91365588  0.30322391 -1.4171899 -0.2089137 -2.3574471</span></span>
 <span></span>
 <span><span class="co"># Compare sum of absolute values with prcomp()</span></span>
 <span><span class="va">pr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/prcomp.html" class="external-link">prcomp</a></span><span class="op">(</span><span class="va">bm</span><span class="op">[</span><span class="op">]</span>, center <span class="op">=</span> <span class="cn">TRUE</span>, scale <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -206,7 +205,7 @@
 <span>  center <span class="op">=</span> <span class="va">top_pca</span><span class="op">$</span><span class="va">center</span>,</span>
 <span>  scale <span class="op">=</span> <span class="va">top_pca</span><span class="op">$</span><span class="va">scale</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;pointer: 0x117099610&gt;</span></span>
+<span><span class="co">#&gt; &lt;pointer: 0x10f559be0&gt;</span></span>
 <span></span>
 <span><span class="co"># Inspect a lightweight summary without loading the entire matrix</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="va">scores_fb</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
@@ -232,12 +231,12 @@
 <span>                                   center <span class="op">=</span> <span class="cn">TRUE</span>, scale <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_variable_loadings_stream_bigmatrix</a></span><span class="op">(</span><span class="va">rotation</span>, <span class="va">pca_stream</span><span class="op">$</span><span class="va">sdev</span>,</span>
 <span>                                       <span class="va">loadings</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;pointer: 0x106d12a90&gt;</span></span>
+<span><span class="co">#&gt; &lt;pointer: 0x138167dd0&gt;</span></span>
 <span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_variable_correlations_stream_bigmatrix</a></span><span class="op">(</span><span class="va">rotation</span>, <span class="va">pca_stream</span><span class="op">$</span><span class="va">sdev</span>,</span>
 <span>                           <span class="va">pca_stream</span><span class="op">$</span><span class="va">column_sd</span>, <span class="va">correlations</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error in pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev, : argument "xpDest" is missing, with no default</span></span>
 <span><span class="fu"><a href="reference/pca_stream_bigmatrix.html">pca_variable_contributions_stream_bigmatrix</a></span><span class="op">(</span><span class="va">loadings</span>, <span class="va">contrib</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;pointer: 0x106d0de40&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; &lt;pointer: 0x1381705f0&gt;</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="robust-pca-and-singular-value-decompositions">Robust PCA and singular value decompositions<a class="anchor" aria-label="anchor" href="#robust-pca-and-singular-value-decompositions"></a>
 </h3>
@@ -303,8 +302,7 @@ plot of chunk robustsvdexample
 <span><span class="va">bm</span><span class="op">[</span>,<span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2000</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span><span class="va">svd_stream</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/svd_bigmatrix.html">svd_bigmatrix</a></span><span class="op">(</span><span class="va">bm</span>, nu <span class="op">=</span> <span class="fl">3</span>, nv <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">svd_stream</span><span class="op">$</span><span class="va">d</span></span>
-<span><span class="co">#&gt;  [1] 16.66256 15.90085 15.80823 14.84659 13.99062 13.52699 13.06717 12.61343</span></span>
-<span><span class="co">#&gt;  [9] 12.15871 11.63997</span></span>
+<span><span class="co">#&gt;  [1] 16.66256 15.90085 15.80823 14.84659 13.99062 13.52699 13.06717 12.61343 12.15871 11.63997</span></span>
 <span></span>
 <span><span class="co"># Direct access to the robust SVD routine</span></span>
 <span><span class="va">svd_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/svd_robust.html">svd_robust</a></span><span class="op">(</span><span class="va">mat</span>, ncomp <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
