@@ -143,6 +143,14 @@ pca_robust <- function(x, center = TRUE, scale = FALSE, ncomp = NULL) {
     new_bigpca_result(result, "robust")
 }
 
+run_with_seed <- function(seed, expr) {
+    if (is.null(seed)) {
+        expr()
+    } else {
+        withr::with_seed(seed, expr())
+    }
+}
+
 #' Prepare iteratively reweighted singular value decomposition
 #'
 #' @description
@@ -376,24 +384,6 @@ pca_spca <- function(x,
                      seed = NULL,
                      return_scores = FALSE,
                      verbose = FALSE) {
-    if (!is.null(seed)) {
-        old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-            get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-        } else {
-            NULL
-        }
-        on.exit({
-            if (is.null(old_seed)) {
-                if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-                    rm(".Random.seed", envir = .GlobalEnv)
-                }
-            } else {
-                assign(".Random.seed", old_seed, envir = .GlobalEnv)
-            }
-        }, add = TRUE)
-        set.seed(seed)
-    }
-
     if (scale && !center) {
         stop("Scaling requires centring the variables", call. = FALSE)
     }
@@ -765,27 +755,7 @@ pca_spca <- function(x,
             verbose = verbose
         )
     }
-
-    if (is.null(seed)) {
-        run_spca()
-    } else {
-        old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-            get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-        } else {
-            NULL
-        }
-        on.exit({
-            if (is.null(old_seed)) {
-                if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-                    rm(".Random.seed", envir = .GlobalEnv)
-                }
-            } else {
-                assign(".Random.seed", old_seed, envir = .GlobalEnv)
-            }
-        }, add = TRUE)
-        set.seed(seed)
-        run_spca()
-    }
+    run_with_seed(seed, run_spca)
 }
 
 #' @rdname pca_spca
@@ -800,229 +770,215 @@ pca_spca_R <- function(x,
                        seed = NULL,
                        return_scores = FALSE,
                        verbose = FALSE) {
-    if (!is.null(seed)) {
-        old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-            get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    run_impl <- function() {
+        if (scale && !center) {
+            stop("Scaling requires centring the variables", call. = FALSE)
+        }
+
+        if (!is.matrix(x)) {
+            x <- as.matrix(x)
+        }
+        if (!is.numeric(x)) {
+            stop("`x` must contain numeric values for scalable PCA", call. = FALSE)
+        }
+
+        n <- nrow(x)
+        p <- ncol(x)
+        if (n == 0 || p == 0) {
+            stop("`x` must contain at least one observation and one variable", call. = FALSE)
+        }
+        if (n < 2) {
+            stop("PCA requires at least two observations", call. = FALSE)
+        }
+
+        block_size <- as.integer(block_size)
+        if (is.na(block_size) || block_size <= 0L) {
+            stop("`block_size` must be a positive integer", call. = FALSE)
+        }
+        block_size <- min(block_size, n)
+
+        max_iter <- as.integer(max_iter)
+        if (is.na(max_iter) || max_iter <= 0L) {
+            stop("`max_iter` must be a positive integer", call. = FALSE)
+        }
+
+        if (is.null(ncomp) || ncomp <= 0L) {
+            ncomp <- min(n, p)
+        }
+        ncomp <- as.integer(min(ncomp, n, p))
+        if (ncomp < 1L) {
+            stop("`ncomp` must select at least one component", call. = FALSE)
+        }
+
+        block_starts <- seq.int(1L, n, by = block_size)
+        col_sum <- numeric(p)
+        col_sum_sq <- numeric(p)
+        observed <- 0L
+        for (start in block_starts) {
+            end <- min(start + block_size - 1L, n)
+            block <- x[start:end, , drop = FALSE]
+            col_sum <- col_sum + colSums(block)
+            col_sum_sq <- col_sum_sq + colSums(block^2)
+            observed <- observed + nrow(block)
+        }
+        if (observed != n) {
+            n <- observed
+            block_size <- min(block_size, n)
+            block_starts <- seq.int(1L, n, by = block_size)
+        }
+
+        mean_vec <- col_sum / n
+        col_ss <- numeric(p)
+        for (start in block_starts) {
+            end <- min(start + block_size - 1L, n)
+            block <- x[start:end, , drop = FALSE]
+            centered <- sweep(block, 2, mean_vec, "-", check.margin = FALSE)
+            col_ss <- col_ss + colSums(centered^2)
+        }
+        denom_sd <- max(1, n - 1L)
+        column_sd <- sqrt(pmax(col_ss / denom_sd, 0))
+        scale_vec <- if (scale) {
+            out <- column_sd
+            out[out == 0] <- 1
+            out
         } else {
             NULL
         }
-        on.exit({
-            if (is.null(old_seed)) {
-                if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-                    rm(".Random.seed", envir = .GlobalEnv)
-                }
+
+        center_vec <- if (center) mean_vec else NULL
+        total_variance <- if (scale) {
+            if (center) {
+                as.numeric(p)
             } else {
-                assign(".Random.seed", old_seed, envir = .GlobalEnv)
+                scale_sq <- if (!is.null(scale_vec)) scale_vec^2 else rep(1, length(col_sum_sq))
+                sum(col_sum_sq / scale_sq) / n
             }
-        }, add = TRUE)
-        set.seed(seed)
-    }
-
-    if (scale && !center) {
-        stop("Scaling requires centring the variables", call. = FALSE)
-    }
-
-    if (!is.matrix(x)) {
-        x <- as.matrix(x)
-    }
-    if (!is.numeric(x)) {
-        stop("`x` must contain numeric values for scalable PCA", call. = FALSE)
-    }
-
-    n <- nrow(x)
-    p <- ncol(x)
-    if (n == 0 || p == 0) {
-        stop("`x` must contain at least one observation and one variable", call. = FALSE)
-    }
-    if (n < 2) {
-        stop("PCA requires at least two observations", call. = FALSE)
-    }
-
-    block_size <- as.integer(block_size)
-    if (is.na(block_size) || block_size <= 0L) {
-        stop("`block_size` must be a positive integer", call. = FALSE)
-    }
-    block_size <- min(block_size, n)
-
-    max_iter <- as.integer(max_iter)
-    if (is.na(max_iter) || max_iter <= 0L) {
-        stop("`max_iter` must be a positive integer", call. = FALSE)
-    }
-
-    if (is.null(ncomp) || ncomp <= 0L) {
-        ncomp <- min(n, p)
-    }
-    ncomp <- as.integer(min(ncomp, n, p))
-    if (ncomp < 1L) {
-        stop("`ncomp` must select at least one component", call. = FALSE)
-    }
-
-    block_starts <- seq.int(1L, n, by = block_size)
-    col_sum <- numeric(p)
-    col_sum_sq <- numeric(p)
-    observed <- 0L
-    for (start in block_starts) {
-        end <- min(start + block_size - 1L, n)
-        block <- x[start:end, , drop = FALSE]
-        col_sum <- col_sum + colSums(block)
-        col_sum_sq <- col_sum_sq + colSums(block^2)
-        observed <- observed + nrow(block)
-    }
-    if (observed != n) {
-        n <- observed
-        block_size <- min(block_size, n)
-        block_starts <- seq.int(1L, n, by = block_size)
-    }
-
-    mean_vec <- col_sum / n
-    col_ss <- numeric(p)
-    for (start in block_starts) {
-        end <- min(start + block_size - 1L, n)
-        block <- x[start:end, , drop = FALSE]
-        centered <- sweep(block, 2, mean_vec, "-", check.margin = FALSE)
-        col_ss <- col_ss + colSums(centered^2)
-    }
-    denom_sd <- max(1, n - 1L)
-    column_sd <- sqrt(pmax(col_ss / denom_sd, 0))
-    scale_vec <- if (scale) {
-        out <- column_sd
-        out[out == 0] <- 1
-        out
-    } else {
-        NULL
-    }
-
-    center_vec <- if (center) mean_vec else NULL
-    total_variance <- if (scale) {
-        if (center) {
-            as.numeric(p)
         } else {
-            scale_sq <- if (!is.null(scale_vec)) scale_vec^2 else rep(1, length(col_sum_sq))
-            sum(col_sum_sq / scale_sq) / n
-        }
-    } else {
-        if (center) {
-            sum(column_sd^2)
-        } else {
-            sum(col_sum_sq) / n
-        }
-    }
-
-    random_basis <- matrix(rnorm(p * ncomp), nrow = p, ncol = ncomp)
-    svd_init <- svd(random_basis, nu = ncomp, nv = 0L)
-    Q <- svd_init$u[, seq_len(ncomp), drop = FALSE]
-
-    transform_block <- function(block) {
-        if (!is.null(center_vec)) {
-            block <- sweep(block, 2, center_vec, "-", check.margin = FALSE)
-        }
-        if (!is.null(scale_vec)) {
-            block <- sweep(block, 2, scale_vec, "/", check.margin = FALSE)
-        }
-        block
-    }
-
-    apply_operator <- function(Q_mat) {
-        accum <- matrix(0, nrow = p, ncol = ncol(Q_mat))
-        for (start in block_starts) {
-            end <- min(start + block_size - 1L, n)
-            block <- transform_block(x[start:end, , drop = FALSE])
-            if (nrow(block) == 0L) {
-                next
+            if (center) {
+                sum(column_sd^2)
+            } else {
+                sum(col_sum_sq) / n
             }
-            block_times_q <- block %*% Q_mat
-            accum <- accum + crossprod(block, block_times_q)
         }
-        accum
-    }
 
-    convergence_flag <- FALSE
-    final_delta <- NA_real_
-    iterations <- 0L
-    for (iter in seq_len(max_iter)) {
-        iterations <- iter
+        random_basis <- matrix(rnorm(p * ncomp), nrow = p, ncol = ncomp)
+        svd_init <- svd(random_basis, nu = ncomp, nv = 0L)
+        Q <- svd_init$u[, seq_len(ncomp), drop = FALSE]
+
+        transform_block <- function(block) {
+            if (!is.null(center_vec)) {
+                block <- sweep(block, 2, center_vec, "-", check.margin = FALSE)
+            }
+            if (!is.null(scale_vec)) {
+                block <- sweep(block, 2, scale_vec, "/", check.margin = FALSE)
+            }
+            block
+        }
+
+        apply_operator <- function(Q_mat) {
+            accum <- matrix(0, nrow = p, ncol = ncol(Q_mat))
+            for (start in block_starts) {
+                end <- min(start + block_size - 1L, n)
+                block <- transform_block(x[start:end, , drop = FALSE])
+                if (nrow(block) == 0L) {
+                    next
+                }
+                block_times_q <- block %*% Q_mat
+                accum <- accum + crossprod(block, block_times_q)
+            }
+            accum
+        }
+
+        convergence_flag <- FALSE
+        final_delta <- NA_real_
+        iterations <- 0L
+        for (iter in seq_len(max_iter)) {
+            iterations <- iter
+            operator_Q <- apply_operator(Q)
+            svd_res <- svd(operator_Q, nu = ncomp, nv = 0L)
+            Q_new <- svd_res$u[, seq_len(ncomp), drop = FALSE]
+            projector_diff <- Q_new %*% t(Q_new) - Q %*% t(Q)
+            final_delta <- base::norm(projector_diff, type = "F")
+            if (verbose) {
+                message(sprintf("Iteration %d, subspace delta = %.6g", iter, final_delta))
+            }
+            Q <- Q_new
+            if (final_delta <= tol) {
+                convergence_flag <- TRUE
+                break
+            }
+        }
+        if (verbose && !convergence_flag) {
+            message("Maximum iterations reached without meeting tolerance")
+        }
+
         operator_Q <- apply_operator(Q)
-        svd_res <- svd(operator_Q, nu = ncomp, nv = 0L)
-        Q_new <- svd_res$u[, seq_len(ncomp), drop = FALSE]
-        projector_diff <- Q_new %*% t(Q_new) - Q %*% t(Q)
-        final_delta <- base::norm(projector_diff, type = "F")
-        if (verbose) {
-            message(sprintf("Iteration %d, subspace delta = %.6g", iter, final_delta))
+        denom <- if (center) n - 1 else n
+        if (denom <= 0) {
+            stop("Unable to compute covariance with fewer than two observations", call. = FALSE)
         }
-        Q <- Q_new
-        if (final_delta <= tol) {
-            convergence_flag <- TRUE
-            break
+        small_matrix <- crossprod(Q, operator_Q) / denom
+        sym_small <- (small_matrix + t(small_matrix)) / 2
+        eig <- eigen(sym_small, symmetric = TRUE)
+        rotation <- Q %*% eig$vectors[, seq_len(ncomp), drop = FALSE]
+        sdev <- sqrt(pmax(eig$values[seq_len(ncomp)], 0))
+        eigenvalues <- sdev^2
+
+        explained <- if (total_variance > 0) eigenvalues / total_variance else rep(0, length(eigenvalues))
+        cumulative <- cumsum(explained)
+
+        colnames(rotation) <- paste0("PC", seq_len(ncomp))
+        if (!is.null(colnames(x))) {
+            rownames(rotation) <- colnames(x)
         }
-    }
-    if (verbose && !convergence_flag) {
-        message("Maximum iterations reached without meeting tolerance")
-    }
+        names(sdev) <- colnames(rotation)
+        names(eigenvalues) <- colnames(rotation)
+        names(explained) <- colnames(rotation)
+        names(cumulative) <- colnames(rotation)
 
-    operator_Q <- apply_operator(Q)
-    denom <- if (center) n - 1 else n
-    if (denom <= 0) {
-        stop("Unable to compute covariance with fewer than two observations", call. = FALSE)
-    }
-    small_matrix <- crossprod(Q, operator_Q) / denom
-    sym_small <- (small_matrix + t(small_matrix)) / 2
-    eig <- eigen(sym_small, symmetric = TRUE)
-    rotation <- Q %*% eig$vectors[, seq_len(ncomp), drop = FALSE]
-    sdev <- sqrt(pmax(eig$values[seq_len(ncomp)], 0))
-    eigenvalues <- sdev^2
-
-    explained <- if (total_variance > 0) eigenvalues / total_variance else rep(0, length(eigenvalues))
-    cumulative <- cumsum(explained)
-
-    colnames(rotation) <- paste0("PC", seq_len(ncomp))
-    if (!is.null(colnames(x))) {
-        rownames(rotation) <- colnames(x)
-    }
-    names(sdev) <- colnames(rotation)
-    names(eigenvalues) <- colnames(rotation)
-    names(explained) <- colnames(rotation)
-    names(cumulative) <- colnames(rotation)
-
-    scores <- NULL
-    if (isTRUE(return_scores)) {
-        scores <- matrix(0, nrow = n, ncol = ncomp)
-        row_index <- 1L
-        for (start in block_starts) {
-            end <- min(start + block_size - 1L, n)
-            block <- transform_block(x[start:end, , drop = FALSE])
-            if (nrow(block) == 0L) {
-                next
+        scores <- NULL
+        if (isTRUE(return_scores)) {
+            scores <- matrix(0, nrow = n, ncol = ncomp)
+            row_index <- 1L
+            for (start in block_starts) {
+                end <- min(start + block_size - 1L, n)
+                block <- transform_block(x[start:end, , drop = FALSE])
+                if (nrow(block) == 0L) {
+                    next
+                }
+                block_scores <- block %*% rotation
+                rows <- seq.int(row_index, length.out = nrow(block))
+                scores[rows, ] <- block_scores
+                row_index <- row_index + nrow(block)
             }
-            block_scores <- block %*% rotation
-            rows <- seq.int(row_index, length.out = nrow(block))
-            scores[rows, ] <- block_scores
-            row_index <- row_index + nrow(block)
+            colnames(scores) <- colnames(rotation)
+            if (!is.null(rownames(x))) {
+                rownames(scores) <- rownames(x)
+            }
         }
-        colnames(scores) <- colnames(rotation)
-        if (!is.null(rownames(x))) {
-            rownames(scores) <- rownames(x)
-        }
+
+        result <- list(
+            sdev = sdev,
+            rotation = rotation,
+            center = if (center) mean_vec else NULL,
+            scale = scale_vec,
+            scores = scores,
+            column_sd = column_sd,
+            eigenvalues = eigenvalues,
+            explained_variance = explained,
+            cumulative_variance = cumulative,
+            covariance = NULL,
+            nobs = n
+        )
+        result <- new_bigpca_result(result, "spca_r")
+        attr(result, "iterations") <- iterations
+        attr(result, "tolerance") <- tol
+        attr(result, "converged") <- isTRUE(convergence_flag)
+        attr(result, "delta") <- final_delta
+        result
     }
 
-    result <- list(
-        sdev = sdev,
-        rotation = rotation,
-        center = if (center) mean_vec else NULL,
-        scale = scale_vec,
-        scores = scores,
-        column_sd = column_sd,
-        eigenvalues = eigenvalues,
-        explained_variance = explained,
-        cumulative_variance = cumulative,
-        covariance = NULL,
-        nobs = n
-    )
-    result <- new_bigpca_result(result, "spca_r")
-    attr(result, "iterations") <- iterations
-    attr(result, "tolerance") <- tol
-    attr(result, "converged") <- isTRUE(convergence_flag)
-    attr(result, "delta") <- final_delta
-    result
+    run_with_seed(seed, run_impl)
 }
 
 #' Principal component analysis for `bigmemory::big.matrix` inputs
@@ -1162,27 +1118,7 @@ pca_spca <- function(x,
             verbose = verbose
         )
     }
-
-    if (is.null(seed)) {
-        run_spca()
-    } else {
-        old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-            get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-        } else {
-            NULL
-        }
-        on.exit({
-            if (is.null(old_seed)) {
-                if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-                    rm(".Random.seed", envir = .GlobalEnv)
-                }
-            } else {
-                assign(".Random.seed", old_seed, envir = .GlobalEnv)
-            }
-        }, add = TRUE)
-        set.seed(seed)
-        run_spca()
-    }
+    run_with_seed(seed, run_spca)
 }
 
 #' @rdname pca_spca
@@ -1197,229 +1133,215 @@ pca_spca_R <- function(x,
                        seed = NULL,
                        return_scores = FALSE,
                        verbose = FALSE) {
-    if (!is.null(seed)) {
-        old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-            get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    run_impl <- function() {
+        if (scale && !center) {
+            stop("Scaling requires centring the variables", call. = FALSE)
+        }
+
+        if (!is.matrix(x)) {
+            x <- as.matrix(x)
+        }
+        if (!is.numeric(x)) {
+            stop("`x` must contain numeric values for scalable PCA", call. = FALSE)
+        }
+
+        n <- nrow(x)
+        p <- ncol(x)
+        if (n == 0 || p == 0) {
+            stop("`x` must contain at least one observation and one variable", call. = FALSE)
+        }
+        if (n < 2) {
+            stop("PCA requires at least two observations", call. = FALSE)
+        }
+
+        block_size <- as.integer(block_size)
+        if (is.na(block_size) || block_size <= 0L) {
+            stop("`block_size` must be a positive integer", call. = FALSE)
+        }
+        block_size <- min(block_size, n)
+
+        max_iter <- as.integer(max_iter)
+        if (is.na(max_iter) || max_iter <= 0L) {
+            stop("`max_iter` must be a positive integer", call. = FALSE)
+        }
+
+        if (is.null(ncomp) || ncomp <= 0L) {
+            ncomp <- min(n, p)
+        }
+        ncomp <- as.integer(min(ncomp, n, p))
+        if (ncomp < 1L) {
+            stop("`ncomp` must select at least one component", call. = FALSE)
+        }
+
+        block_starts <- seq.int(1L, n, by = block_size)
+        col_sum <- numeric(p)
+        col_sum_sq <- numeric(p)
+        observed <- 0L
+        for (start in block_starts) {
+            end <- min(start + block_size - 1L, n)
+            block <- x[start:end, , drop = FALSE]
+            col_sum <- col_sum + colSums(block)
+            col_sum_sq <- col_sum_sq + colSums(block^2)
+            observed <- observed + nrow(block)
+        }
+        if (observed != n) {
+            n <- observed
+            block_size <- min(block_size, n)
+            block_starts <- seq.int(1L, n, by = block_size)
+        }
+
+        mean_vec <- col_sum / n
+        col_ss <- numeric(p)
+        for (start in block_starts) {
+            end <- min(start + block_size - 1L, n)
+            block <- x[start:end, , drop = FALSE]
+            centered <- sweep(block, 2, mean_vec, "-", check.margin = FALSE)
+            col_ss <- col_ss + colSums(centered^2)
+        }
+        denom_sd <- max(1, n - 1L)
+        column_sd <- sqrt(pmax(col_ss / denom_sd, 0))
+        scale_vec <- if (scale) {
+            out <- column_sd
+            out[out == 0] <- 1
+            out
         } else {
             NULL
         }
-        on.exit({
-            if (is.null(old_seed)) {
-                if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-                    rm(".Random.seed", envir = .GlobalEnv)
-                }
+
+        center_vec <- if (center) mean_vec else NULL
+        total_variance <- if (scale) {
+            if (center) {
+                as.numeric(p)
             } else {
-                assign(".Random.seed", old_seed, envir = .GlobalEnv)
+                scale_sq <- if (!is.null(scale_vec)) scale_vec^2 else rep(1, length(col_sum_sq))
+                sum(col_sum_sq / scale_sq) / n
             }
-        }, add = TRUE)
-        set.seed(seed)
-    }
-
-    if (scale && !center) {
-        stop("Scaling requires centring the variables", call. = FALSE)
-    }
-
-    if (!is.matrix(x)) {
-        x <- as.matrix(x)
-    }
-    if (!is.numeric(x)) {
-        stop("`x` must contain numeric values for scalable PCA", call. = FALSE)
-    }
-
-    n <- nrow(x)
-    p <- ncol(x)
-    if (n == 0 || p == 0) {
-        stop("`x` must contain at least one observation and one variable", call. = FALSE)
-    }
-    if (n < 2) {
-        stop("PCA requires at least two observations", call. = FALSE)
-    }
-
-    block_size <- as.integer(block_size)
-    if (is.na(block_size) || block_size <= 0L) {
-        stop("`block_size` must be a positive integer", call. = FALSE)
-    }
-    block_size <- min(block_size, n)
-
-    max_iter <- as.integer(max_iter)
-    if (is.na(max_iter) || max_iter <= 0L) {
-        stop("`max_iter` must be a positive integer", call. = FALSE)
-    }
-
-    if (is.null(ncomp) || ncomp <= 0L) {
-        ncomp <- min(n, p)
-    }
-    ncomp <- as.integer(min(ncomp, n, p))
-    if (ncomp < 1L) {
-        stop("`ncomp` must select at least one component", call. = FALSE)
-    }
-
-    block_starts <- seq.int(1L, n, by = block_size)
-    col_sum <- numeric(p)
-    col_sum_sq <- numeric(p)
-    observed <- 0L
-    for (start in block_starts) {
-        end <- min(start + block_size - 1L, n)
-        block <- x[start:end, , drop = FALSE]
-        col_sum <- col_sum + colSums(block)
-        col_sum_sq <- col_sum_sq + colSums(block^2)
-        observed <- observed + nrow(block)
-    }
-    if (observed != n) {
-        n <- observed
-        block_size <- min(block_size, n)
-        block_starts <- seq.int(1L, n, by = block_size)
-    }
-
-    mean_vec <- col_sum / n
-    col_ss <- numeric(p)
-    for (start in block_starts) {
-        end <- min(start + block_size - 1L, n)
-        block <- x[start:end, , drop = FALSE]
-        centered <- sweep(block, 2, mean_vec, "-", check.margin = FALSE)
-        col_ss <- col_ss + colSums(centered^2)
-    }
-    denom_sd <- max(1, n - 1L)
-    column_sd <- sqrt(pmax(col_ss / denom_sd, 0))
-    scale_vec <- if (scale) {
-        out <- column_sd
-        out[out == 0] <- 1
-        out
-    } else {
-        NULL
-    }
-
-    center_vec <- if (center) mean_vec else NULL
-    total_variance <- if (scale) {
-        if (center) {
-            as.numeric(p)
         } else {
-            scale_sq <- if (!is.null(scale_vec)) scale_vec^2 else rep(1, length(col_sum_sq))
-            sum(col_sum_sq / scale_sq) / n
-        }
-    } else {
-        if (center) {
-            sum(column_sd^2)
-        } else {
-            sum(col_sum_sq) / n
-        }
-    }
-
-    random_basis <- matrix(rnorm(p * ncomp), nrow = p, ncol = ncomp)
-    svd_init <- svd(random_basis, nu = ncomp, nv = 0L)
-    Q <- svd_init$u[, seq_len(ncomp), drop = FALSE]
-
-    transform_block <- function(block) {
-        if (!is.null(center_vec)) {
-            block <- sweep(block, 2, center_vec, "-", check.margin = FALSE)
-        }
-        if (!is.null(scale_vec)) {
-            block <- sweep(block, 2, scale_vec, "/", check.margin = FALSE)
-        }
-        block
-    }
-
-    apply_operator <- function(Q_mat) {
-        accum <- matrix(0, nrow = p, ncol = ncol(Q_mat))
-        for (start in block_starts) {
-            end <- min(start + block_size - 1L, n)
-            block <- transform_block(x[start:end, , drop = FALSE])
-            if (nrow(block) == 0L) {
-                next
+            if (center) {
+                sum(column_sd^2)
+            } else {
+                sum(col_sum_sq) / n
             }
-            block_times_q <- block %*% Q_mat
-            accum <- accum + crossprod(block, block_times_q)
         }
-        accum
-    }
 
-    convergence_flag <- FALSE
-    final_delta <- NA_real_
-    iterations <- 0L
-    for (iter in seq_len(max_iter)) {
-        iterations <- iter
+        random_basis <- matrix(rnorm(p * ncomp), nrow = p, ncol = ncomp)
+        svd_init <- svd(random_basis, nu = ncomp, nv = 0L)
+        Q <- svd_init$u[, seq_len(ncomp), drop = FALSE]
+
+        transform_block <- function(block) {
+            if (!is.null(center_vec)) {
+                block <- sweep(block, 2, center_vec, "-", check.margin = FALSE)
+            }
+            if (!is.null(scale_vec)) {
+                block <- sweep(block, 2, scale_vec, "/", check.margin = FALSE)
+            }
+            block
+        }
+
+        apply_operator <- function(Q_mat) {
+            accum <- matrix(0, nrow = p, ncol = ncol(Q_mat))
+            for (start in block_starts) {
+                end <- min(start + block_size - 1L, n)
+                block <- transform_block(x[start:end, , drop = FALSE])
+                if (nrow(block) == 0L) {
+                    next
+                }
+                block_times_q <- block %*% Q_mat
+                accum <- accum + crossprod(block, block_times_q)
+            }
+            accum
+        }
+
+        convergence_flag <- FALSE
+        final_delta <- NA_real_
+        iterations <- 0L
+        for (iter in seq_len(max_iter)) {
+            iterations <- iter
+            operator_Q <- apply_operator(Q)
+            svd_res <- svd(operator_Q, nu = ncomp, nv = 0L)
+            Q_new <- svd_res$u[, seq_len(ncomp), drop = FALSE]
+            projector_diff <- Q_new %*% t(Q_new) - Q %*% t(Q)
+            final_delta <- base::norm(projector_diff, type = "F")
+            if (verbose) {
+                message(sprintf("Iteration %d, subspace delta = %.6g", iter, final_delta))
+            }
+            Q <- Q_new
+            if (final_delta <= tol) {
+                convergence_flag <- TRUE
+                break
+            }
+        }
+        if (verbose && !convergence_flag) {
+            message("Maximum iterations reached without meeting tolerance")
+        }
+
         operator_Q <- apply_operator(Q)
-        svd_res <- svd(operator_Q, nu = ncomp, nv = 0L)
-        Q_new <- svd_res$u[, seq_len(ncomp), drop = FALSE]
-        projector_diff <- Q_new %*% t(Q_new) - Q %*% t(Q)
-        final_delta <- base::norm(projector_diff, type = "F")
-        if (verbose) {
-            message(sprintf("Iteration %d, subspace delta = %.6g", iter, final_delta))
+        denom <- if (center) n - 1 else n
+        if (denom <= 0) {
+            stop("Unable to compute covariance with fewer than two observations", call. = FALSE)
         }
-        Q <- Q_new
-        if (final_delta <= tol) {
-            convergence_flag <- TRUE
-            break
+        small_matrix <- crossprod(Q, operator_Q) / denom
+        sym_small <- (small_matrix + t(small_matrix)) / 2
+        eig <- eigen(sym_small, symmetric = TRUE)
+        rotation <- Q %*% eig$vectors[, seq_len(ncomp), drop = FALSE]
+        sdev <- sqrt(pmax(eig$values[seq_len(ncomp)], 0))
+        eigenvalues <- sdev^2
+
+        explained <- if (total_variance > 0) eigenvalues / total_variance else rep(0, length(eigenvalues))
+        cumulative <- cumsum(explained)
+
+        colnames(rotation) <- paste0("PC", seq_len(ncomp))
+        if (!is.null(colnames(x))) {
+            rownames(rotation) <- colnames(x)
         }
-    }
-    if (verbose && !convergence_flag) {
-        message("Maximum iterations reached without meeting tolerance")
-    }
+        names(sdev) <- colnames(rotation)
+        names(eigenvalues) <- colnames(rotation)
+        names(explained) <- colnames(rotation)
+        names(cumulative) <- colnames(rotation)
 
-    operator_Q <- apply_operator(Q)
-    denom <- if (center) n - 1 else n
-    if (denom <= 0) {
-        stop("Unable to compute covariance with fewer than two observations", call. = FALSE)
-    }
-    small_matrix <- crossprod(Q, operator_Q) / denom
-    sym_small <- (small_matrix + t(small_matrix)) / 2
-    eig <- eigen(sym_small, symmetric = TRUE)
-    rotation <- Q %*% eig$vectors[, seq_len(ncomp), drop = FALSE]
-    sdev <- sqrt(pmax(eig$values[seq_len(ncomp)], 0))
-    eigenvalues <- sdev^2
-
-    explained <- if (total_variance > 0) eigenvalues / total_variance else rep(0, length(eigenvalues))
-    cumulative <- cumsum(explained)
-
-    colnames(rotation) <- paste0("PC", seq_len(ncomp))
-    if (!is.null(colnames(x))) {
-        rownames(rotation) <- colnames(x)
-    }
-    names(sdev) <- colnames(rotation)
-    names(eigenvalues) <- colnames(rotation)
-    names(explained) <- colnames(rotation)
-    names(cumulative) <- colnames(rotation)
-
-    scores <- NULL
-    if (isTRUE(return_scores)) {
-        scores <- matrix(0, nrow = n, ncol = ncomp)
-        row_index <- 1L
-        for (start in block_starts) {
-            end <- min(start + block_size - 1L, n)
-            block <- transform_block(x[start:end, , drop = FALSE])
-            if (nrow(block) == 0L) {
-                next
+        scores <- NULL
+        if (isTRUE(return_scores)) {
+            scores <- matrix(0, nrow = n, ncol = ncomp)
+            row_index <- 1L
+            for (start in block_starts) {
+                end <- min(start + block_size - 1L, n)
+                block <- transform_block(x[start:end, , drop = FALSE])
+                if (nrow(block) == 0L) {
+                    next
+                }
+                block_scores <- block %*% rotation
+                rows <- seq.int(row_index, length.out = nrow(block))
+                scores[rows, ] <- block_scores
+                row_index <- row_index + nrow(block)
             }
-            block_scores <- block %*% rotation
-            rows <- seq.int(row_index, length.out = nrow(block))
-            scores[rows, ] <- block_scores
-            row_index <- row_index + nrow(block)
+            colnames(scores) <- colnames(rotation)
+            if (!is.null(rownames(x))) {
+                rownames(scores) <- rownames(x)
+            }
         }
-        colnames(scores) <- colnames(rotation)
-        if (!is.null(rownames(x))) {
-            rownames(scores) <- rownames(x)
-        }
+
+        result <- list(
+            sdev = sdev,
+            rotation = rotation,
+            center = if (center) mean_vec else NULL,
+            scale = scale_vec,
+            scores = scores,
+            column_sd = column_sd,
+            eigenvalues = eigenvalues,
+            explained_variance = explained,
+            cumulative_variance = cumulative,
+            covariance = NULL,
+            nobs = n
+        )
+        result <- new_bigpca_result(result, "spca_r")
+        attr(result, "iterations") <- iterations
+        attr(result, "tolerance") <- tol
+        attr(result, "converged") <- isTRUE(convergence_flag)
+        attr(result, "delta") <- final_delta
+        result
     }
 
-    result <- list(
-        sdev = sdev,
-        rotation = rotation,
-        center = if (center) mean_vec else NULL,
-        scale = scale_vec,
-        scores = scores,
-        column_sd = column_sd,
-        eigenvalues = eigenvalues,
-        explained_variance = explained,
-        cumulative_variance = cumulative,
-        covariance = NULL,
-        nobs = n
-    )
-    result <- new_bigpca_result(result, "spca_r")
-    attr(result, "iterations") <- iterations
-    attr(result, "tolerance") <- tol
-    attr(result, "converged") <- isTRUE(convergence_flag)
-    attr(result, "delta") <- final_delta
-    result
+    run_with_seed(seed, run_impl)
 }
 
 #' Principal component analysis for `bigmemory::big.matrix` inputs
@@ -1881,55 +1803,53 @@ pca_spca_stream_bigmatrix <- function(
     if (is.na(max_iter) || max_iter <= 0L) {
         stop("`max_iter` must be a positive integer", call. = FALSE)
     }
-    if (!is.null(seed)) {
-        old_seed <- if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-            get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-        } else {
-            NULL
-        }
-        on.exit({
-            if (is.null(old_seed)) {
-                if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-                    rm(".Random.seed", envir = .GlobalEnv)
-                }
-            } else {
-                assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    compute <- function() {
+        result <- .pca_spca_stream_bigmatrix(
+            mat_ptr,
+            rot_ptr,
+            center,
+            scale,
+            ncomp,
+            block_size,
+            max_iter,
+            tol,
+            return_scores,
+            verbose
+        )
+        result <- new_bigpca_result(result, "spca_stream_bigmatrix")
+        rotation <- result$rotation
+        comps <- seq_len(ncol(rotation))
+        colnames(rotation) <- paste0("PC", comps)
+        if (methods::is(xpMat, "big.matrix")) {
+            cn <- tryCatch(colnames(xpMat), error = function(e) NULL)
+            rn <- tryCatch(rownames(xpMat), error = function(e) NULL)
+            if (!is.null(cn) && length(cn) == nrow(rotation)) {
+                rownames(rotation) <- cn
             }
-        }, add = TRUE)
-        set.seed(seed)
-    }
-    result <- .pca_spca_stream_bigmatrix(mat_ptr, rot_ptr, center, scale, ncomp, block_size, max_iter, tol, return_scores, verbose)
-    result <- new_bigpca_result(result, "spca_stream_bigmatrix")
-    rotation <- result$rotation
-    comps <- seq_len(ncol(rotation))
-    colnames(rotation) <- paste0("PC", comps)
-    if (methods::is(xpMat, "big.matrix")) {
-        cn <- tryCatch(colnames(xpMat), error = function(e) NULL)
-        rn <- tryCatch(rownames(xpMat), error = function(e) NULL)
-        if (!is.null(cn) && length(cn) == nrow(rotation)) {
-            rownames(rotation) <- cn
+            if (isTRUE(return_scores) && !is.null(result$scores) && !is.null(rn) && length(rn) == nrow(result$scores)) {
+                rownames(result$scores) <- rn
+            }
         }
-        if (isTRUE(return_scores) && !is.null(result$scores) && !is.null(rn) && length(rn) == nrow(result$scores)) {
-            rownames(result$scores) <- rn
+        result$rotation <- rotation
+        if (!is.null(result$sdev)) {
+            names(result$sdev) <- colnames(rotation)
         }
+        if (!is.null(result$eigenvalues)) {
+            names(result$eigenvalues) <- colnames(rotation)
+        }
+        if (!is.null(result$explained_variance)) {
+            names(result$explained_variance) <- colnames(rotation)
+        }
+        if (!is.null(result$cumulative_variance)) {
+            names(result$cumulative_variance) <- colnames(rotation)
+        }
+        if (isTRUE(return_scores) && !is.null(result$scores)) {
+            colnames(result$scores) <- colnames(rotation)
+        }
+        result
     }
-    result$rotation <- rotation
-    if (!is.null(result$sdev)) {
-        names(result$sdev) <- colnames(rotation)
-    }
-    if (!is.null(result$eigenvalues)) {
-        names(result$eigenvalues) <- colnames(rotation)
-    }
-    if (!is.null(result$explained_variance)) {
-        names(result$explained_variance) <- colnames(rotation)
-    }
-    if (!is.null(result$cumulative_variance)) {
-        names(result$cumulative_variance) <- colnames(rotation)
-    }
-    if (isTRUE(return_scores) && !is.null(result$scores)) {
-        colnames(result$scores) <- colnames(rotation)
-    }
-    result
+
+    run_with_seed(seed, compute)
 }
 
 #' @export

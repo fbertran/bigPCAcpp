@@ -93,19 +93,19 @@ bm[,] <- matrix(rnorm(n * p), nrow = n)
 # Run PCA and extract eigenvalues and rotation
 res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
 res$eigenvalues
-#>  [1] 1.2701077 1.2537526 1.2151939 1.2024274 1.1802276 1.1354639 1.1048690
-#>  [8] 1.0902075 1.0630117 1.0403948 1.0224523 1.0122884 0.9931732 0.9852838
-#> [15] 0.9550143 0.9414302 0.9204860 0.9008016 0.8898188 0.8773914 0.8437966
-#> [22] 0.7979435 0.7821215 0.7628152 0.7595271
+#>  [1] 1.2845439 1.2620605 1.2091376 1.1818967 1.1602022 1.1537473 1.1038259
+#>  [8] 1.0854178 1.0678532 1.0537783 1.0259519 1.0080503 0.9849999 0.9670073
+#> [15] 0.9650919 0.9483674 0.9239029 0.9036332 0.8874503 0.8771716 0.8310860
+#> [22] 0.8174111 0.7834761 0.7712611 0.7426758
 res$importance
 #> NULL
 res$rotation[1:5, 1:3]
-#>             [,1]        [,2]        [,3]
-#> [1,]  0.14398208  0.22870330  0.12242692
-#> [2,] -0.07237026 -0.21951399  0.19761877
-#> [3,] -0.32741500 -0.34723923 -0.02282739
-#> [4,]  0.23671229  0.14764528  0.05672112
-#> [5,]  0.14343191  0.03490776  0.10010376
+#>            [,1]        [,2]       [,3]
+#> [1,]  0.2467361 -0.24557824  0.2681748
+#> [2,]  0.1762556  0.11111327  0.2584223
+#> [3,] -0.2017991 -0.04409299  0.2879400
+#> [4,] -0.0266216  0.01239800 -0.4072411
+#> [5,] -0.2933579  0.26374884 -0.0539767
 
 # Generate PCA scores in bigmemory storage
 scores <- bigmemory::big.matrix(
@@ -120,13 +120,13 @@ scores <- bigmemory::big.matrix(
   center = res$center,
   scale = res$scale
 ))[1:6,1:6]
-#>             [,1]       [,2]       [,3]       [,4]        [,5]         [,6]
-#> [1,]  0.65907229 -0.1974698 -3.5714713 -0.7150943  0.01412313  0.519975663
-#> [2,] -0.20615917  2.6536525 -2.1246929 -0.2443652 -1.22009504  0.338157676
-#> [3,]  1.97067655 -0.1459897  0.2706729 -2.5778456  1.03548532  1.343923490
-#> [4,] -0.06521853 -0.3507049 -0.7159949  0.2779695  1.08616408 -1.106634062
-#> [5,]  0.34681884  0.6974558 -2.4466572 -0.4696698  1.95794498 -0.008496806
-#> [6,]  0.62390402 -0.9625778 -0.9364008  1.5785386  0.47807633  0.074748751
+#>             [,1]       [,2]       [,3]       [,4]       [,5]        [,6]
+#> [1,]  1.36452852  0.7007380  0.5504053  1.0804175  0.6831606  1.63794188
+#> [2,] -1.98004866  1.5863879 -1.9466312 -0.3780198 -0.6156588 -0.80700382
+#> [3,]  0.52434117 -1.0393866 -1.0267544  0.9600295  0.9040187 -1.20811774
+#> [4,]  0.58223135 -2.1385763 -0.2254927 -0.1100652  0.6813038  0.07643652
+#> [5,] -0.74641531 -2.1539782  0.8830645  1.3563627  0.1888510  0.96249631
+#> [6,]  0.06082332 -0.2176821  0.4721814 -2.1389319  0.6322640  2.10164117
 
 # Compare sum of absolute values with prcomp()
 pr <- prcomp(bm[], center = TRUE, scale = TRUE)
@@ -167,7 +167,7 @@ pca_scores_stream_bigmatrix(
   center = top_pca$center,
   scale = top_pca$scale
 )
-#> <pointer: 0x1596ceca0>
+#> <pointer: 0x117099610>
 
 # Inspect a lightweight summary without loading the entire matrix
 colMeans(scores_fb[, 1:2])
@@ -198,12 +198,12 @@ pca_stream <- pca_stream_bigmatrix(bm, xpRotation = rotation,
                                    center = TRUE, scale = FALSE)
 pca_variable_loadings_stream_bigmatrix(rotation, pca_stream$sdev,
                                        loadings)
-#> <pointer: 0x1596df4e0>
+#> <pointer: 0x106d12a90>
 pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev,
                            pca_stream$column_sd, correlations)
 #> Error in pca_variable_correlations_stream_bigmatrix(rotation, pca_stream$sdev, : argument "xpDest" is missing, with no default
 pca_variable_contributions_stream_bigmatrix(loadings, contrib)
-#> <pointer: 0x159655010>
+#> <pointer: 0x106d0de40>
 ```
 
 ### Robust PCA and singular value decompositions

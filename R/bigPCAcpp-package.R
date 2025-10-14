@@ -13,7 +13,7 @@
 #' @seealso [pca_bigmatrix()], [pca_stream_bigmatrix()]
 #' 
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(bigmemory)
 #' mat <- as.big.matrix(matrix(rnorm(20), nrow = 5))
 #' result <- pca_bigmatrix(mat)

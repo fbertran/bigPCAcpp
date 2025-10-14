@@ -17,12 +17,12 @@ Description: High performance principal component analysis routines
        workflows. Additional interfaces expose 'scalable' singular value
        decomposition, robust PCA, and robust SVD algorithms so that
        users can explore large matrices while tempering the influence
-       of outliers. 'Scalable' principal component analysis 
-       <doi:10.1145/2723372.2751520> is also implemented.
+       of outliers. 'Scalable' principal component analysis is also implemented.
 License: GPL (>= 2)
 Depends: R (>= 3.5.0)
 Imports: Rcpp (>= 1.0.12),
-    methods
+    methods,
+    withr
 Suggests: knitr,
     rmarkdown,
     bigmemory,

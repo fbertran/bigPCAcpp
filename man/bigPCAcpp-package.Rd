@@ -15,7 +15,7 @@ variants that write results to \code{bigmemory::big.matrix} destinations used by
 file-based pipelines.
 }
 \examples{
-\dontrun{
+\donttest{
 library(bigmemory)
 mat <- as.big.matrix(matrix(rnorm(20), nrow = 5))
 result <- pca_bigmatrix(mat)
