@@ -1,3 +1,7 @@
+# bigPCAcpp 0.9.1
+
+* Added irlba to benchmarks.
+
 # bigPCAcpp 0.9.0
 
 * Added vignettes, readme.

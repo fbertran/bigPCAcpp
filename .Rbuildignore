@@ -9,6 +9,8 @@ genlogo.R
 ^Meta$
 ^doc$
 
+^TODO_LIST$
+
 ^renv/staging
 ^renv
 

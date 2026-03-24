@@ -12,12 +12,11 @@ bibentry(bibtype="Manual",
          author = c(person(given = "Frederic", family= "Bertrand")),
          year         = year,
          note         = vers,
-#         url          = "https://CRAN.R-project.org/package=bigPCA",
-#         doi         = doi,
+         url          = "https://CRAN.R-project.org/package=bigPCAcpp",
+         doi         = doi,
          textVersion = 
          paste("Frédéric Bertrand (",year ,"). ", 
-               titl, ", ", vers, ".", sep=""
-#               titl, ", ", vers, ". doi:", doi, ".", sep=""
+               titl, ", ", vers, ". doi:", doi, ".", sep=""
                )
 )
 

@@ -22,6 +22,8 @@ knitr::opts_chunk$set(
 ## Frédéric Bertrand
 
 <!-- badges: start -->
+[![DOI](https://img.shields.io/badge/doi-10.32614/CRAN.package.bigPCAcpp-blue.svg)](https://doi.org/10.32614/CRAN.package.bigPCAcpp)
+[![CRAN status](https://www.r-pkg.org/badges/version/bigPCAcpp)](https://cran.r-project.org/package=bigPCAcpp)
 [![R-CMD-check](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml)
 [![R-hub](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml)
 <!-- badges: end -->
@@ -53,6 +55,12 @@ accumulation and LAPACK eigen decompositions. Current features include
   `bigmemory`, and
 
 ## Installation
+
+You can install the released version of **bigPCAcpp** from [CRAN](https://CRAN.R-project.org) with:
+
+```{r, eval = FALSE}
+install.packages("bigPCAcpp")
+```
 
 You can install the development version of **bigPCAcpp** from GitHub with:
 

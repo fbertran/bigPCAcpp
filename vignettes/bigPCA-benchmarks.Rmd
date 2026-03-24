@@ -18,9 +18,9 @@ knitr::opts_chunk$set(
 ## Overview
 
 This vignette summarises the performance of the principal component analysis (PCA) routines provided by **bigPCAcpp** across matrices ranging from small to very large dimensions. All experiments operate on in-memory
-[`bigmemory::big.matrix`] objects to avoid file-backed storage and a baseline using base R's [`stats::prcomp()`] is included for context.
+[`bigmemory::big.matrix`] objects to avoid file-backed storage and a baseline using base R's [`stats::prcomp()`] is included for context. A focused `bench::mark()` comparison against [`irlba::prcomp_irlba()`] is also included for a smaller dense benchmark.
 
-The benchmarking code was executed once, and the resulting dataset is stored in the package as `benchmark_results`. The analysis below relies exclusively on the saved dataset so that the vignette can be built quickly.
+The large benchmark suite was executed once, and the resulting dataset is stored in the package as `benchmark_results`. The summary analysis below relies on that saved dataset so that the vignette can be built quickly, while the focused `irlba` comparison is evaluated only when its optional benchmark packages are available.
 
 ```{r data-load}
 data("benchmark_results", package = "bigPCAcpp")
@@ -152,7 +152,7 @@ for (dataset_name in names(sizes)) {
         replicate = rep,
         user_time = unname(timing[["user.self"]]),
         system_time = unname(timing[["sys.self"]]),
-        user_time = unname(timing[["user_time"]]),
+        elapsed = unname(timing[["elapsed"]]),
         success = success,
         backend = if (is.null(backend)) NA_character_ else as.character(backend),
         iterations = iterations,
@@ -176,6 +176,34 @@ if (!dir.exists("data")) {
 
 save(benchmark_results, file = file.path("data", "benchmark_results.rda"), compress = "bzip2")
 ```
+
+## Focused comparison with `irlba`
+
+The large benchmark suite above uses repeated `system.time()` calls so it scales to very large matrices. For a smaller in-memory problem, the script `scripts/run_benchmark_irlba.R` provides a higher-resolution comparison between `pca_bigmatrix()` and [`irlba::prcomp_irlba()`] using `bench::mark()`.
+
+```{r irlba-benchmark, eval=requireNamespace("bench", quietly = TRUE) && requireNamespace("irlba", quietly = TRUE)}
+set.seed(2025)
+bm <- bigmemory::big.matrix(nrow = 2500, ncol = 40, type = "double")
+m <- matrix(rnorm(2500 * 40), nrow = 2500)
+bm[,] <- m
+
+bench::mark(
+  bigpca = bigPCAcpp::pca_bigmatrix(
+    bm,
+    center = TRUE,
+    scale = TRUE,
+    ncomp = 4
+  )$dev,
+  irlba = irlba::prcomp_irlba(
+    m,
+    n = 4,
+    center = TRUE,
+    scale. = TRUE
+  )$dev,
+  min_iterations = 200
+)
+```
+
 ## Summary statistics
 
 Only successful runs are retained for the summaries. Replicate counts vary with matrix size (twenty runs for matrices up to 20,000 rows then tens runs).

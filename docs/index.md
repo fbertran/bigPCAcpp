@@ -1,26 +1,13 @@
----
-output: rmarkdown::github_document
----
-
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
-
-
-# bigPCAcpp <img src="man/figures/BigPCAcpp_hex_dark.svg" align="right" width="200"/>
+# bigPCAcpp ![](reference/figures/BigPCAcpp_hex_dark.svg)
 
 # Principal component analysis for bigmemory matrices
+
 ## Frédéric Bertrand
 
-<!-- badges: start -->
-[![DOI](https://img.shields.io/badge/doi-10.32614/CRAN.package.bigPCAcpp-blue.svg)](https://doi.org/10.32614/CRAN.package.bigPCAcpp)
-[![CRAN status](https://www.r-pkg.org/badges/version/bigPCAcpp)](https://cran.r-project.org/package=bigPCAcpp)
-[![R-CMD-check](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/R-CMD-check.yaml)
-[![R-hub](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml/badge.svg)](https://github.com/fbertran/bigPCAcpp/actions/workflows/rhub.yaml)
-<!-- badges: end -->
-
 The **bigPCAcpp** package provides high performance principal component
-analysis (PCA) routines specialised for `bigmemory::big.matrix` objects.
-It keeps data in bigmemory allocations from ingestion through
+analysis (PCA) routines specialised for
+[`bigmemory::big.matrix`](https://rdrr.io/pkg/bigmemory/man/big.matrix.html)
+objects. It keeps data in bigmemory allocations from ingestion through
 eigendecomposition so that very large matrices can be analysed without
 copying them into base R matrices. In addition to the PCA core, the
 package offers streaming helpers that write scores, loadings,
@@ -38,23 +25,23 @@ These workflows make it possible to analyse data sets that exceed the
 available RAM while keeping numerical stability through double-precision
 accumulation and LAPACK eigen decompositions. Current features include
 
-* centring and scaling directly on `big.matrix` inputs,
-* incremental score generation that avoids bringing data into memory,
-* helpers to persist PCA diagnostics in file-backed storage,
-* SVD utilities for dense and robust decompositions backed by
+- centring and scaling directly on `big.matrix` inputs,
+- incremental score generation that avoids bringing data into memory,
+- helpers to persist PCA diagnostics in file-backed storage,
+- SVD utilities for dense and robust decompositions backed by
   `bigmemory`, and
 
 ## Installation
 
-You can install the released version of **bigPCAcpp** from [CRAN](https://CRAN.R-project.org) with:
-
+You can install the released version of **bigPCAcpp** from
+[CRAN](https://CRAN.R-project.org) with:
 
 ``` r
 install.packages("bigPCAcpp")
 ```
 
-You can install the development version of **bigPCAcpp** from GitHub with:
-
+You can install the development version of **bigPCAcpp** from GitHub
+with:
 
 ``` r
 # install.packages("devtools")
@@ -62,7 +49,6 @@ devtools::install_github("fbertran/bigPCAcpp")
 ```
 
 If you prefer a local source install, clone the repository and run:
-
 
 ``` r
 R CMD build bigPCAcpp
@@ -74,20 +60,22 @@ R CMD INSTALL bigPCAcpp_0.9.0.tar.gz
 The package defines several options to control numerical tolerances and
 workspace allocation. They are prefixed with `bigPCAcpp.` and include:
 
-Option | Default value | Description
---- | --- | ---
-`bigPCAcpp.block_size` | `1000L` | Number of rows processed in each block when streaming scores through BLAS.
-`bigPCAcpp.center_scale_epsilon` | `1e-8` | Lower bound applied when rescaling columns to avoid division instabilities.
-`bigPCAcpp.progress` | `FALSE` | Emit progress updates when computing PCA on long-running jobs.
+| Option | Default value | Description |
+|----|----|----|
+| `bigPCAcpp.block_size` | `1000L` | Number of rows processed in each block when streaming scores through BLAS. |
+| `bigPCAcpp.center_scale_epsilon` | `1e-8` | Lower bound applied when rescaling columns to avoid division instabilities. |
+| `bigPCAcpp.progress` | `FALSE` | Emit progress updates when computing PCA on long-running jobs. |
 
-All options can be changed with `options()` at runtime. For example,
-`options(bigPCAcpp.block_size = 5000L)` increases the streaming block size.
+All options can be changed with
+[`options()`](https://rdrr.io/r/base/options.html) at runtime. For
+example, `options(bigPCAcpp.block_size = 5000L)` increases the streaming
+block size.
 
 ## Examples
 
 The examples below demonstrate the bigmemory workflow and compare the
-results with base R's `prcomp()` implementation.
-
+results with base R’s [`prcomp()`](https://rdrr.io/r/stats/prcomp.html)
+implementation.
 
 ``` r
 library(bigmemory)
@@ -142,10 +130,11 @@ sum(abs(abs(pr$rotation[, 1:3])-abs(res$rotation[, 1:3])))<10^(-6)
 #> [1] TRUE
 ```
 
-`pca_bigmatrix()` can also focus on a subset of leading components while
-streaming the results into file-backed matrices. The following snippet stores the
-first four principal components and keeps a running summary of their scores.
-
+[`pca_bigmatrix()`](https://fbertran.github.io/bigPCAcpp/reference/pca_bigmatrix.md)
+can also focus on a subset of leading components while streaming the
+results into file-backed matrices. The following snippet stores the
+first four principal components and keeps a running summary of their
+scores.
 
 ``` r
 library(bigmemory)
@@ -187,7 +176,6 @@ apply(scores_fb[, 1:2], 2, sd)
 To stream the diagnostics into `bigmemory`-backed matrices, use the
 corresponding helper functions:
 
-
 ``` r
 library(bigmemory)
 library(bigPCAcpp)
@@ -218,13 +206,16 @@ pca_variable_contributions_stream_bigmatrix(loadings, contrib)
 ### Robust PCA and singular value decompositions
 
 Robust workflows dampen the influence of outliers while retaining the
-familiar PCA interface. The `pca_robust()` helper centres variables by the
-median, optionally scales by the MAD, and relies on an iteratively
-reweighted SVD to derive principal components. The same robust solver is
-exposed directly via `svd_robust()` for use in custom pipelines, and the
-streaming-friendly `svd_bigmatrix()` wrapper computes classical SVDs on
-`big.matrix` objects without materialising dense copies in memory.
-
+familiar PCA interface. The
+[`pca_robust()`](https://fbertran.github.io/bigPCAcpp/reference/pca_robust.md)
+helper centres variables by the median, optionally scales by the MAD,
+and relies on an iteratively reweighted SVD to derive principal
+components. The same robust solver is exposed directly via
+[`svd_robust()`](https://fbertran.github.io/bigPCAcpp/reference/svd_robust.md)
+for use in custom pipelines, and the streaming-friendly
+[`svd_bigmatrix()`](https://fbertran.github.io/bigPCAcpp/reference/svd_bigmatrix.md)
+wrapper computes classical SVDs on `big.matrix` objects without
+materialising dense copies in memory.
 
 ``` r
 library(bigmemory)
@@ -249,10 +240,10 @@ scores_classical[1,]
 pca_plot_contributions(pca_individual_contributions(scores_classical, classical$sdev))
 ```
 
-<div class="figure">
-<img src="man/figures/README-robustsvdexample-1.png" alt="plot of chunk robustsvdexample" width="100%" />
-<p class="caption">plot of chunk robustsvdexample</p>
-</div>
+![plot of chunk
+robustsvdexample](reference/figures/README-robustsvdexample-1.png)
+
+plot of chunk robustsvdexample
 
 ``` r
 
@@ -267,10 +258,10 @@ robust$scores[1,]
 pca_plot_contributions(pca_individual_contributions(robust$scores, robust$sdev))
 ```
 
-<div class="figure">
-<img src="man/figures/README-robustsvdexample-2.png" alt="plot of chunk robustsvdexample" width="100%" />
-<p class="caption">plot of chunk robustsvdexample</p>
-</div>
+![plot of chunk
+robustsvdexample](reference/figures/README-robustsvdexample-2.png)
+
+plot of chunk robustsvdexample
 
 ``` r
 
@@ -282,7 +273,6 @@ cbind(classical = classical$rotation[1:5, 1], robust = robust$rotation[1:5, 1])
 #> [4,]  0.4071138 0.18028142
 #> [5,]  0.2728298 0.11709868
 ```
-
 
 ``` r
 # Classical SVD on a file-backed big.matrix
@@ -304,22 +294,24 @@ svd_out$weights[1:6]
 #> [1] 1 1 1 1 1 1
 ```
 
-
-Robust decompositions down-weight the contaminated observations while the
-classical stream demonstrates how to fetch singular vectors without materialising
-the dense matrix. The robust solver also exposes per-row weights that can be
-reused to flag problematic observations for further inspection.
+Robust decompositions down-weight the contaminated observations while
+the classical stream demonstrates how to fetch singular vectors without
+materialising the dense matrix. The robust solver also exposes per-row
+weights that can be reused to flag problematic observations for further
+inspection.
 
 ### Plotting diagnostics
 
 `bigPCAcpp` bundles plot helpers that operate on both dense matrices and
 `big.matrix` backends. The snippets below illustrate how to call each
-function using results from `pca_bigmatrix()`. For instance, the
-`pca_plot_scores()` helper samples observations and draws a scatter plot of
-their scores on a chosen pair of components, which is particularly useful when
-you need to visually assess potential clusters without loading the full data
-set into memory.
-
+function using results from
+[`pca_bigmatrix()`](https://fbertran.github.io/bigPCAcpp/reference/pca_bigmatrix.md).
+For instance, the
+[`pca_plot_scores()`](https://fbertran.github.io/bigPCAcpp/reference/pca_plot_scores.md)
+helper samples observations and draws a scatter plot of their scores on
+a chosen pair of components, which is particularly useful when you need
+to visually assess potential clusters without loading the full data set
+into memory.
 
 ``` r
 library(bigmemory)
@@ -334,10 +326,10 @@ res <- pca_bigmatrix(bm, center = TRUE, scale = TRUE)
 pca_plot_scree(res)
 ```
 
-<div class="figure">
-<img src="man/figures/README-plotexamples-1.png" alt="plot of chunk plotexamples" width="100%" />
-<p class="caption">plot of chunk plotexamples</p>
-</div>
+![plot of chunk
+plotexamples](reference/figures/README-plotexamples-1.png)
+
+plot of chunk plotexamples
 
 ``` r
 
@@ -353,10 +345,10 @@ pca_plot_scores(
 )
 ```
 
-<div class="figure">
-<img src="man/figures/README-plotexamples-2.png" alt="plot of chunk plotexamples" width="100%" />
-<p class="caption">plot of chunk plotexamples</p>
-</div>
+![plot of chunk
+plotexamples](reference/figures/README-plotexamples-2.png)
+
+plot of chunk plotexamples
 
 ``` r
 
@@ -366,10 +358,10 @@ contrib <- pca_variable_contributions(loadings)
 pca_plot_contributions(contrib, component = 1L, top_n = 10L)
 ```
 
-<div class="figure">
-<img src="man/figures/README-plotexamples-3.png" alt="plot of chunk plotexamples" width="100%" />
-<p class="caption">plot of chunk plotexamples</p>
-</div>
+![plot of chunk
+plotexamples](reference/figures/README-plotexamples-3.png)
+
+plot of chunk plotexamples
 
 ``` r
 
@@ -379,10 +371,10 @@ res$column_sd, res$scale)
 pca_plot_correlation_circle(correlations, components = c(1L, 2L))
 ```
 
-<div class="figure">
-<img src="man/figures/README-plotexamples-4.png" alt="plot of chunk plotexamples" width="100%" />
-<p class="caption">plot of chunk plotexamples</p>
-</div>
+![plot of chunk
+plotexamples](reference/figures/README-plotexamples-4.png)
+
+plot of chunk plotexamples
 
 ``` r
 
@@ -394,16 +386,17 @@ if (is.null(scores)) {
 pca_plot_biplot(scores, loadings, components = c(1L, 2L))
 ```
 
-<div class="figure">
-<img src="man/figures/README-plotexamples-5.png" alt="plot of chunk plotexamples" width="100%" />
-<p class="caption">plot of chunk plotexamples</p>
-</div>
+![plot of chunk
+plotexamples](reference/figures/README-plotexamples-5.png)
+
+plot of chunk plotexamples
 
 ## Citation
 
 If you use **bigPCAcpp** in academic work, please cite:
 
-Bertrand F. (2025). *bigPCAcpp: Principal Component Analysis for bigmemory Matrices*.
+Bertrand F. (2025). *bigPCAcpp: Principal Component Analysis for
+bigmemory Matrices*.
 
 ## Maintainer
 
@@ -411,4 +404,3 @@ Maintainer: Frédéric Bertrand <frederic.bertrand@lecnam.net>
 
 For questions, bug reports, or contributions, please open an issue on
 [GitHub](https://github.com/fbertran/bigPCAcpp).
-
