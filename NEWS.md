@@ -12,6 +12,10 @@
   covariance matrix, so it is not intended for very-wide p; use
   `pca_spca_stream_filematrix()` for very-wide `filematrix` workflows.
 
+* Added `inst/notes/filematrix-backend.md` documenting the filematrix backend
+  strategy, benchmark failure classification, and the decision to defer native
+  C++ filematrix integration pending R-level benchmarks.
+
 # bigPCAcpp 0.9.1
 
 * Added irlba to benchmarks.
