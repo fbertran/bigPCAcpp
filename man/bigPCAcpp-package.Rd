@@ -28,4 +28,9 @@ result$sdev
 \author{
 \strong{Maintainer}: Frederic Bertrand \email{frederic.bertrand@lecnam.net}
 
+Authors:
+\itemize{
+  \item Frederic Bertrand \email{frederic.bertrand@lecnam.net}
+}
+
 }

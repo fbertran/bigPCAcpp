@@ -36,7 +36,7 @@ drawn through the origin.}
 \item{label_points}{Logical; when \code{TRUE}, point labels derived from row names
 are drawn next to the scores.}
 
-\item{...}{Additional graphical parameters passed to \code{\link[graphics:plot.default]{graphics::plot()}}.}
+\item{...}{Additional graphical parameters passed to \code{\link[graphics:plot]{graphics::plot()}}.}
 }
 \value{
 A list containing the selected \code{components}, extracted \code{scores},

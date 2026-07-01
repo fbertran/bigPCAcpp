@@ -1,3 +1,8 @@
+# bigPCAcpp 0.9.2
+
+* Added an optional `filematrix` row-block provider for benchmark-side
+  validation artifacts without changing the existing `bigmemory` PCA backends.
+
 # bigPCAcpp 0.9.1
 
 * Added irlba to benchmarks.

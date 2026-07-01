@@ -26,7 +26,7 @@ available.}
 \item{draw}{Logical; set to \code{FALSE} to return the prepared coordinates
 without plotting.}
 
-\item{...}{Additional graphical parameters passed to \code{\link[graphics:plot.default]{graphics::plot()}}.}
+\item{...}{Additional graphical parameters passed to \code{\link[graphics:plot]{graphics::plot()}}.}
 }
 \value{
 A data frame with \code{variable}, \code{PCx}, and \code{PCy} columns representing the

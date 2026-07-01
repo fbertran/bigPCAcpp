@@ -214,8 +214,4 @@ list(scores = scores, loadings = loadings, correlations = correlations,
 streaming variants \code{\link[=pca_stream_bigmatrix]{pca_stream_bigmatrix()}} and companions.
 
 \link{bigpca}
-
-\link{bigpca}
-
-\link{bigpca}
 }

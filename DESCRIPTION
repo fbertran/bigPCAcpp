@@ -1,8 +1,8 @@
 Package: bigPCAcpp
 Type: Package
 Title: Principal Component Analysis for 'bigmemory' Matrices
-Version: 0.9.1
-Date: 2026-03-25
+Version: 0.9.2
+Date: 2026-07-01
 Authors@R: person("Frederic", "Bertrand", role = c("aut", "cre"),
        email = "frederic.bertrand@lecnam.net")
 Author: Frederic Bertrand [aut, cre]
@@ -27,6 +27,7 @@ Imports: Rcpp (>= 1.0.12),
     withr
 Suggests: bench,
     bigmemory,
+    filematrix,
     ggplot2,
     irlba,
     knitr,
@@ -42,5 +43,5 @@ NeedsCompilation: yes
 URL: https://fbertran.github.io/bigPCAcpp/, https://github.com/fbertran/bigPCAcpp
 BugReports: https://github.com/fbertran/bigPCAcpp/issues
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

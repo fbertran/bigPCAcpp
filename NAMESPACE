@@ -3,6 +3,8 @@
 S3method(plot,bigpca)
 S3method(print,summary.bigpca)
 S3method(summary,bigpca)
+export(is_filematrix_object)
+export(make_filematrix_row_provider)
 export(pca_bigmatrix)
 export(pca_individual_contributions)
 export(pca_individual_cos2)

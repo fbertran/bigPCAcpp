@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+#include <R_ext/Lapack.h>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -29,6 +30,150 @@ double mad_about_zero(const std::vector<double>& values) {
         abs_vals[i] = std::fabs(values[i]);
     }
     return median_inplace(abs_vals);
+}
+
+struct DenseSvdResult {
+    NumericMatrix u;
+    NumericVector d;
+    NumericMatrix v;
+};
+
+DenseSvdResult dense_svd(const NumericMatrix& x, int nu, int nv) {
+    const int m = x.nrow();
+    const int n = x.ncol();
+    const int min_dim = std::min(m, n);
+    const int econ_cols = min_dim;
+
+    NumericMatrix u_mat(m, econ_cols);
+    NumericMatrix vt_mat(econ_cols, n);
+    NumericMatrix a_work = clone(x);
+    NumericVector singular_values(min_dim);
+
+    const char jobz = 'S';
+    const int lda = std::max(1, m);
+    const int ldu = std::max(1, m);
+    const int ldvt = std::max(1, econ_cols);
+
+    bool used_dgesdd = false;
+    int info = 0;
+
+    int lwork = -1;
+    double work_query = 0.0;
+    std::vector<int> iwork(std::max(1, 8 * min_dim));
+    F77_CALL(dgesdd)(&jobz,
+                     &m,
+                     &n,
+                     a_work.begin(),
+                     &lda,
+                     singular_values.begin(),
+                     u_mat.begin(),
+                     &ldu,
+                     vt_mat.begin(),
+                     &ldvt,
+                     &work_query,
+                     &lwork,
+                     iwork.data(),
+                     &info FCONE);
+    if (info == 0) {
+        lwork = static_cast<int>(work_query);
+        if (lwork < 1) {
+            lwork = 1;
+        }
+        std::vector<double> work(static_cast<std::size_t>(lwork));
+        a_work = clone(x);
+        F77_CALL(dgesdd)(&jobz,
+                         &m,
+                         &n,
+                         a_work.begin(),
+                         &lda,
+                         singular_values.begin(),
+                         u_mat.begin(),
+                         &ldu,
+                         vt_mat.begin(),
+                         &ldvt,
+                         work.data(),
+                         &lwork,
+                         iwork.data(),
+                         &info FCONE);
+        if (info == 0) {
+            used_dgesdd = true;
+        }
+    }
+
+    if (!used_dgesdd) {
+        const char jobu = 'S';
+        const char jobvt = 'S';
+        lwork = -1;
+        work_query = 0.0;
+        info = 0;
+        a_work = clone(x);
+        F77_CALL(dgesvd)(&jobu,
+                         &jobvt,
+                         &m,
+                         &n,
+                         a_work.begin(),
+                         &lda,
+                         singular_values.begin(),
+                         u_mat.begin(),
+                         &ldu,
+                         vt_mat.begin(),
+                         &ldvt,
+                         &work_query,
+                         &lwork,
+                         &info FCONE FCONE);
+        if (info != 0) {
+            stop("LAPACK dgesvd workspace query failed");
+        }
+        lwork = static_cast<int>(work_query);
+        if (lwork < std::max(1, 5 * min_dim)) {
+            lwork = std::max(1, 5 * min_dim);
+        }
+        std::vector<double> work(static_cast<std::size_t>(lwork));
+        a_work = clone(x);
+        F77_CALL(dgesvd)(&jobu,
+                         &jobvt,
+                         &m,
+                         &n,
+                         a_work.begin(),
+                         &lda,
+                         singular_values.begin(),
+                         u_mat.begin(),
+                         &ldu,
+                         vt_mat.begin(),
+                         &ldvt,
+                         work.data(),
+                         &lwork,
+                         &info FCONE FCONE);
+        if (info < 0) {
+            stop("Invalid argument supplied to LAPACK dgesvd");
+        }
+        if (info > 0) {
+            stop("LAPACK dgesvd failed to converge");
+        }
+    } else {
+        if (info < 0) {
+            stop("Invalid argument supplied to LAPACK dgesdd");
+        }
+        if (info > 0) {
+            stop("LAPACK dgesdd failed to converge");
+        }
+    }
+
+    NumericMatrix u_out(m, nu);
+    for (int i = 0; i < m; ++i) {
+        for (int k = 0; k < nu; ++k) {
+            u_out(i, k) = u_mat(i, k);
+        }
+    }
+
+    NumericMatrix v_out(n, nv);
+    for (int j = 0; j < n; ++j) {
+        for (int k = 0; k < nv; ++k) {
+            v_out(j, k) = vt_mat(k, j);
+        }
+    }
+
+    return DenseSvdResult{u_out, singular_values, v_out};
 }
 
 } // namespace
@@ -75,13 +220,10 @@ List svd_robust_cpp(const NumericMatrix& x,
         }
     }
 
-    Environment base_env = Environment::namespace_env("base");
-    Function base_svd = base_env["svd"];
-
-    List svd_res = base_svd(weighted, Named("nu", nu), Named("nv", nv));
-    NumericMatrix last_u = as<NumericMatrix>(svd_res["u"]);
-    NumericMatrix last_v = as<NumericMatrix>(svd_res["v"]);
-    NumericVector last_d = as<NumericVector>(svd_res["d"]);
+    DenseSvdResult svd_res = dense_svd(weighted, nu, nv);
+    NumericMatrix last_u = svd_res.u;
+    NumericMatrix last_v = svd_res.v;
+    NumericVector last_d = svd_res.d;
     std::vector<double> singular(ncomp);
     std::vector<double> row_residuals(n);
     int iterations = 1;
@@ -94,10 +236,10 @@ List svd_robust_cpp(const NumericMatrix& x,
                     weighted(i, j) = x(i, j) * w;
                 }
             }
-            svd_res = base_svd(weighted, Named("nu", nu), Named("nv", nv));
-            last_u = as<NumericMatrix>(svd_res["u"]);
-            last_v = as<NumericMatrix>(svd_res["v"]);
-            last_d = as<NumericVector>(svd_res["d"]);
+            svd_res = dense_svd(weighted, nu, nv);
+            last_u = svd_res.u;
+            last_v = svd_res.v;
+            last_d = svd_res.d;
             iterations = iter;
         }
 
