@@ -1,30 +1,57 @@
-#' Experimental filematrix streaming PCA helpers
+#' Experimental filematrix PCA helpers
 #'
 #' @description
 #' Experimental streaming helpers for `filematrix` inputs. These functions read
 #' the source matrix in row blocks through [make_filematrix_row_provider()],
 #' avoiding `bigmemory` memory-mapped access patterns on shared filesystems.
-#' They are intended for streaming SPCA and score projection workflows, not as
-#' replacements for exact covariance PCA or highly optimised random-access
-#' workloads.
+#' `pca_stream_filematrix()` performs exact covariance PCA for moderate-p
+#' benchmark validation by forming a `p x p` covariance matrix. Very-wide
+#' `filematrix` workflows should use [pca_spca_stream_filematrix()] instead.
 #'
 #' @inheritParams pca_spca
 #' @param X A `filematrix` object.
-#' @param center For `pca_spca_stream_filematrix()`, logical; should column
-#'   means be subtracted before fitting? For `pca_scores_stream_filematrix()`,
-#'   `NULL` or a numeric vector of column centers.
-#' @param scale For `pca_spca_stream_filematrix()`, logical; should columns be
-#'   scaled after centering? For `pca_scores_stream_filematrix()`, `NULL` or a
-#'   numeric vector of column scale factors.
+#' @param center For `pca_stream_filematrix()` and
+#'   `pca_spca_stream_filematrix()`, logical; should column means be subtracted
+#'   before fitting? For `pca_scores_stream_filematrix()`, `NULL` or a numeric
+#'   vector of column centers.
+#' @param scale For `pca_stream_filematrix()` and
+#'   `pca_spca_stream_filematrix()`, logical; should columns be scaled after
+#'   centering? For `pca_scores_stream_filematrix()`, `NULL` or a numeric vector
+#'   of column scale factors.
 #' @param chunk_size Number of rows to read per block.
 #'
-#' @return `pca_spca_stream_filematrix()` returns a [`bigpca`] object compatible
-#'   with [pca_spca()] outputs and records the `spca_filematrix` backend.
+#' @return `pca_stream_filematrix()` returns a [`bigpca`] object compatible
+#'   with [pca_bigmatrix()] outputs and records the `stream_filematrix` backend.
+#'   `pca_spca_stream_filematrix()` returns a [`bigpca`] object compatible with
+#'   [pca_spca()] outputs and records the `spca_filematrix` backend.
 #'   `pca_scores_stream_filematrix()` returns a dense score matrix computed by
 #'   scanning the `filematrix` input in row blocks.
 #'
 #' @name filematrix_streaming_pca
 NULL
+
+#' @rdname filematrix_streaming_pca
+#' @export
+pca_stream_filematrix <- function(
+        X,
+        center = TRUE,
+        scale = FALSE,
+        ncomp = -1L,
+        chunk_size = 1024L,
+        return_scores = FALSE) {
+    if (!requireNamespace("filematrix", quietly = TRUE)) {
+        stop("pca_stream_filematrix() requires the optional filematrix package.", call. = FALSE)
+    }
+    provider <- make_filematrix_row_provider(X, chunk_size = chunk_size)
+    .exact_pca_stream_row_provider(
+        provider = provider,
+        X = X,
+        center = center,
+        scale = scale,
+        ncomp = ncomp,
+        return_scores = return_scores
+    )
+}
 
 #' @rdname filematrix_streaming_pca
 #' @export
@@ -83,6 +110,161 @@ pca_scores_stream_filematrix <- function(
         scale = scale,
         ncomp = ncomp
     )
+}
+
+.exact_pca_stream_row_provider <- function(provider,
+                                           X,
+                                           center,
+                                           scale,
+                                           ncomp,
+                                           return_scores) {
+    if (!is.logical(center) || length(center) != 1L || is.na(center)) {
+        stop("`center` must be TRUE or FALSE", call. = FALSE)
+    }
+    if (!is.logical(scale) || length(scale) != 1L || is.na(scale)) {
+        stop("`scale` must be TRUE or FALSE", call. = FALSE)
+    }
+    if (scale && !center) {
+        stop("Scaling requires centring the variables", call. = FALSE)
+    }
+    if (!is.logical(return_scores) || length(return_scores) != 1L || is.na(return_scores)) {
+        stop("`return_scores` must be TRUE or FALSE", call. = FALSE)
+    }
+
+    n <- provider$nrow()
+    p <- provider$ncol()
+    if (n < 2L) {
+        stop("PCA requires at least two observations", call. = FALSE)
+    }
+    .check_filematrix_covariance_budget(p)
+
+    if (is.null(ncomp)) {
+        ncomp <- p
+    }
+    ncomp <- as.integer(ncomp)
+    if (length(ncomp) != 1L) {
+        stop("`ncomp` must be a scalar integer", call. = FALSE)
+    }
+    if (!is.na(ncomp) && ncomp <= 0L) {
+        ncomp <- p
+    }
+    if (is.na(ncomp) || ncomp < 1L) {
+        stop("`ncomp` must select at least one component", call. = FALSE)
+    }
+    if (ncomp > p) {
+        ncomp <- p
+    }
+
+    block_starts <- seq.int(1L, n, by = provider$chunk_size)
+    col_sum <- numeric(p)
+    observed <- 0L
+    for (start in block_starts) {
+        end <- min(start + provider$chunk_size - 1L, n)
+        block <- provider$get_rows(start, end)
+        .check_finite_numeric_block(block)
+        col_sum <- col_sum + colSums(block)
+        observed <- observed + nrow(block)
+    }
+    if (observed != n) {
+        stop("Provider returned an unexpected number of rows", call. = FALSE)
+    }
+
+    mean_vec <- col_sum / n
+    col_ss <- numeric(p)
+    for (start in block_starts) {
+        end <- min(start + provider$chunk_size - 1L, n)
+        block <- provider$get_rows(start, end)
+        .check_finite_numeric_block(block)
+        centered <- sweep(block, 2, mean_vec, "-", check.margin = FALSE)
+        col_ss <- col_ss + colSums(centered^2)
+    }
+
+    column_sd <- sqrt(pmax(col_ss / max(1L, n - 1L), 0))
+    center_vec <- if (center) mean_vec else NULL
+    scale_vec <- if (scale) {
+        out <- column_sd
+        out[out == 0] <- 1
+        out
+    } else {
+        NULL
+    }
+
+    transform_block <- function(block) {
+        if (!is.null(center_vec)) {
+            block <- sweep(block, 2, center_vec, "-", check.margin = FALSE)
+        }
+        if (!is.null(scale_vec)) {
+            block <- sweep(block, 2, scale_vec, "/", check.margin = FALSE)
+        }
+        block
+    }
+
+    covariance <- matrix(0, nrow = p, ncol = p)
+    for (start in block_starts) {
+        end <- min(start + provider$chunk_size - 1L, n)
+        block <- provider$get_rows(start, end)
+        .check_finite_numeric_block(block)
+        block <- transform_block(block)
+        covariance <- covariance + crossprod(block)
+    }
+    denom <- n - 1L
+    if (denom <= 0L) {
+        stop("Unable to compute covariance with fewer than two observations", call. = FALSE)
+    }
+    covariance <- covariance / denom
+    covariance <- (covariance + t(covariance)) / 2
+
+    eig <- eigen(covariance, symmetric = TRUE)
+    eigenvalues_all <- pmax(eig$values, 0)
+    rotation <- eig$vectors[, seq_len(ncomp), drop = FALSE]
+    eigenvalues <- eigenvalues_all[seq_len(ncomp)]
+    sdev <- sqrt(eigenvalues)
+    total_variance <- sum(eigenvalues_all)
+    explained <- if (total_variance > 0) eigenvalues / total_variance else rep(0, length(eigenvalues))
+    cumulative <- cumsum(explained)
+
+    colnames(rotation) <- paste0("PC", seq_len(ncomp))
+    filematrix_colnames <- .filematrix_colnames(X)
+    if (!is.null(filematrix_colnames) && length(filematrix_colnames) == p) {
+        rownames(rotation) <- filematrix_colnames
+        names(mean_vec) <- filematrix_colnames
+        names(column_sd) <- filematrix_colnames
+        if (!is.null(scale_vec)) {
+            names(scale_vec) <- filematrix_colnames
+        }
+        dimnames(covariance) <- list(filematrix_colnames, filematrix_colnames)
+    }
+    names(sdev) <- colnames(rotation)
+    names(eigenvalues) <- colnames(rotation)
+    names(explained) <- colnames(rotation)
+    names(cumulative) <- colnames(rotation)
+
+    scores <- NULL
+    if (isTRUE(return_scores)) {
+        scores <- pca_scores_stream_filematrix(
+            X,
+            rotation = rotation,
+            center = center_vec,
+            scale = scale_vec,
+            ncomp = ncomp,
+            chunk_size = provider$chunk_size
+        )
+    }
+
+    result <- list(
+        sdev = sdev,
+        rotation = rotation,
+        center = if (center) mean_vec else NULL,
+        scale = scale_vec,
+        scores = scores,
+        column_sd = column_sd,
+        eigenvalues = eigenvalues,
+        explained_variance = explained,
+        cumulative_variance = cumulative,
+        covariance = covariance,
+        nobs = n
+    )
+    new_bigpca_result(result, "stream_filematrix")
 }
 
 .spca_stream_row_provider <- function(provider,
@@ -330,6 +512,31 @@ pca_scores_stream_filematrix <- function(
     }
     if (any(!is.finite(block))) {
         stop("Provider block contains non-finite values.", call. = FALSE)
+    }
+    invisible(TRUE)
+}
+
+.check_filematrix_covariance_budget <- function(p) {
+    max_gb <- getOption("bigPCAcpp.filematrix.max_cov_gb", 2)
+    if (is.null(max_gb) || identical(max_gb, Inf)) {
+        return(invisible(TRUE))
+    }
+    max_gb <- suppressWarnings(as.numeric(max_gb))
+    if (length(max_gb) != 1L || is.na(max_gb) || max_gb < 0) {
+        stop("Option `bigPCAcpp.filematrix.max_cov_gb` must be a non-negative numeric scalar or Inf.", call. = FALSE)
+    }
+    cov_gb <- (as.numeric(p) * as.numeric(p) * 8) / 1024^3
+    if (cov_gb > max_gb) {
+        stop(
+            sprintf(
+                "Refusing exact filematrix PCA: the %d x %d covariance matrix would require %.3f GB, exceeding option `bigPCAcpp.filematrix.max_cov_gb` = %.3f GB. Use pca_spca_stream_filematrix() for very-wide filematrix workflows or increase the option for benchmark validation.",
+                p,
+                p,
+                cov_gb,
+                max_gb
+            ),
+            call. = FALSE
+        )
     }
     invisible(TRUE)
 }

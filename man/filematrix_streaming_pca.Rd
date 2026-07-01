@@ -2,10 +2,20 @@
 % Please edit documentation in R/filematrix_streaming_pca.R
 \name{filematrix_streaming_pca}
 \alias{filematrix_streaming_pca}
+\alias{pca_stream_filematrix}
 \alias{pca_spca_stream_filematrix}
 \alias{pca_scores_stream_filematrix}
-\title{Experimental filematrix streaming PCA helpers}
+\title{Experimental filematrix PCA helpers}
 \usage{
+pca_stream_filematrix(
+  X,
+  center = TRUE,
+  scale = FALSE,
+  ncomp = -1L,
+  chunk_size = 1024L,
+  return_scores = FALSE
+)
+
 pca_spca_stream_filematrix(
   X,
   ncomp = NULL,
@@ -31,18 +41,23 @@ pca_scores_stream_filematrix(
 \arguments{
 \item{X}{A \code{filematrix} object.}
 
+\item{center}{For \code{pca_stream_filematrix()} and
+\code{pca_spca_stream_filematrix()}, logical; should column means be subtracted
+before fitting? For \code{pca_scores_stream_filematrix()}, \code{NULL} or a numeric
+vector of column centers.}
+
+\item{scale}{For \code{pca_stream_filematrix()} and
+\code{pca_spca_stream_filematrix()}, logical; should columns be scaled after
+centering? For \code{pca_scores_stream_filematrix()}, \code{NULL} or a numeric vector
+of column scale factors.}
+
 \item{ncomp}{Number of score columns to return. Use a non-positive value to
 keep all columns in \code{rotation}.}
 
-\item{center}{For \code{pca_spca_stream_filematrix()}, logical; should column
-means be subtracted before fitting? For \code{pca_scores_stream_filematrix()},
-\code{NULL} or a numeric vector of column centers.}
-
-\item{scale}{For \code{pca_spca_stream_filematrix()}, logical; should columns be
-scaled after centering? For \code{pca_scores_stream_filematrix()}, \code{NULL} or a
-numeric vector of column scale factors.}
-
 \item{chunk_size}{Number of rows to read per block.}
+
+\item{return_scores}{Logical; when \code{TRUE}, principal component scores are
+computed in a final streaming pass over the data.}
 
 \item{max_iter}{Maximum number of block power iterations.}
 
@@ -52,17 +67,16 @@ difference between successive subspace projectors.}
 \item{seed}{Optional integer seed used to initialise the random starting
 basis.}
 
-\item{return_scores}{Logical; when \code{TRUE}, principal component scores are
-computed in a final streaming pass over the data.}
-
 \item{verbose}{Logical; when \code{TRUE}, diagnostic messages describing the
 iteration progress are emitted.}
 
 \item{rotation}{Numeric rotation matrix whose rows match \code{ncol(X)}.}
 }
 \value{
-\code{pca_spca_stream_filematrix()} returns a \code{\link{bigpca}} object compatible
-with \code{\link[=pca_spca]{pca_spca()}} outputs and records the \code{spca_filematrix} backend.
+\code{pca_stream_filematrix()} returns a \code{\link{bigpca}} object compatible
+with \code{\link[=pca_bigmatrix]{pca_bigmatrix()}} outputs and records the \code{stream_filematrix} backend.
+\code{pca_spca_stream_filematrix()} returns a \code{\link{bigpca}} object compatible with
+\code{\link[=pca_spca]{pca_spca()}} outputs and records the \code{spca_filematrix} backend.
 \code{pca_scores_stream_filematrix()} returns a dense score matrix computed by
 scanning the \code{filematrix} input in row blocks.
 }
@@ -70,7 +84,7 @@ scanning the \code{filematrix} input in row blocks.
 Experimental streaming helpers for \code{filematrix} inputs. These functions read
 the source matrix in row blocks through \code{\link[=make_filematrix_row_provider]{make_filematrix_row_provider()}},
 avoiding \code{bigmemory} memory-mapped access patterns on shared filesystems.
-They are intended for streaming SPCA and score projection workflows, not as
-replacements for exact covariance PCA or highly optimised random-access
-workloads.
+\code{pca_stream_filematrix()} performs exact covariance PCA for moderate-p
+benchmark validation by forming a \verb{p x p} covariance matrix. Very-wide
+\code{filematrix} workflows should use \code{\link[=pca_spca_stream_filematrix]{pca_spca_stream_filematrix()}} instead.
 }

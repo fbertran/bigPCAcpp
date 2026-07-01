@@ -5,8 +5,12 @@
 
 * Added true `filematrix` support for streaming SPCA via
   `pca_spca_stream_filematrix()` and dense block-wise score projection via
-  `pca_scores_stream_filematrix()`. Ordinary exact PCA filematrix support is
-  not included.
+  `pca_scores_stream_filematrix()`.
+
+* Added exact `filematrix` PCA via `pca_stream_filematrix()` for moderate-p
+  benchmark validation. This backend streams row blocks but forms a `p x p`
+  covariance matrix, so it is not intended for very-wide p; use
+  `pca_spca_stream_filematrix()` for very-wide `filematrix` workflows.
 
 # bigPCAcpp 0.9.1
 
