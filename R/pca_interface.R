@@ -680,6 +680,20 @@ pca_spca <- function(x,
     }
 
     run_spca <- function() {
+        if (is_filematrix_object(x)) {
+            return(pca_spca_stream_filematrix(
+                X = x,
+                ncomp = ncomp,
+                center = center,
+                scale = scale,
+                chunk_size = block_size,
+                max_iter = max_iter,
+                tol = tol,
+                seed = NULL,
+                return_scores = return_scores,
+                verbose = verbose
+            ))
+        }
         if (inherits(x, "big.matrix") || typeof(x) == "externalptr") {
             ptr <- resolve_big_pointer(x, "x")
             block_size_int <- as.integer(block_size)
@@ -1043,6 +1057,20 @@ pca_spca <- function(x,
     }
 
     run_spca <- function() {
+        if (is_filematrix_object(x)) {
+            return(pca_spca_stream_filematrix(
+                X = x,
+                ncomp = ncomp,
+                center = center,
+                scale = scale,
+                chunk_size = block_size,
+                max_iter = max_iter,
+                tol = tol,
+                seed = NULL,
+                return_scores = return_scores,
+                verbose = verbose
+            ))
+        }
         if (inherits(x, "big.matrix") || typeof(x) == "externalptr") {
             ptr <- resolve_big_pointer(x, "x")
             block_size_int <- as.integer(block_size)

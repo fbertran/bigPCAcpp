@@ -3,6 +3,9 @@
 * Added an optional `filematrix` row-block provider for benchmark-side
   validation artifacts without changing the existing `bigmemory` PCA backends.
 
+* Added experimental `filematrix` streaming backend functions for SPCA and
+  score streaming.
+
 # bigPCAcpp 0.9.1
 
 * Added irlba to benchmarks.

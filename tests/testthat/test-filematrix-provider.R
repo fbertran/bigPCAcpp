@@ -93,5 +93,6 @@ test_that("filematrix provider is benchmark groundwork, not a PCA backend", {
   skip_if_not_installed("filematrix")
 
   expect_true("make_filematrix_row_provider" %in% getNamespaceExports("bigPCAcpp"))
-  expect_false("pca_spca_stream_filematrix" %in% getNamespaceExports("bigPCAcpp"))
+  expect_true("pca_spca_stream_filematrix" %in% getNamespaceExports("bigPCAcpp"))
+  expect_true("pca_scores_stream_filematrix" %in% getNamespaceExports("bigPCAcpp"))
 })
