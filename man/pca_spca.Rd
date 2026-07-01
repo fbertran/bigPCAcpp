@@ -71,10 +71,10 @@ pca_spca_R(
 )
 }
 \arguments{
-\item{x}{A numeric matrix, data frame, \code{\link[bigmemory:big.matrix]{bigmemory::big.matrix}}, or an
-external pointer referencing a big.matrix. The input is processed in
-row-wise blocks so that large matrices can be analysed without creating
-dense copies in R memory.}
+\item{x}{A numeric matrix, data frame, \code{\link[bigmemory:big.matrix]{bigmemory::big.matrix}},
+\code{filematrix}, or an external pointer referencing a big.matrix. The input
+is processed in row-wise blocks so that large matrices can be analysed
+without creating dense copies in R memory.}
 
 \item{ncomp}{Number of principal components to retain. Use \code{NULL} or a
 non-positive value to keep \code{min(nrow(x), ncol(x))} components.}

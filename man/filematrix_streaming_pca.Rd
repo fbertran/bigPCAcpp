@@ -11,7 +11,7 @@ pca_spca_stream_filematrix(
   ncomp = NULL,
   center = TRUE,
   scale = FALSE,
-  chunk_size = 8192L,
+  chunk_size = 2048L,
   max_iter = 50L,
   tol = 1e-04,
   seed = NULL,
@@ -24,21 +24,23 @@ pca_scores_stream_filematrix(
   rotation,
   center = NULL,
   scale = NULL,
-  chunk_size = 8192L,
-  sink = c("r", "filematrix", "none"),
-  filematrix_base = NULL,
-  type = "double"
+  ncomp = -1L,
+  chunk_size = 1024L
 )
 }
 \arguments{
 \item{X}{A \code{filematrix} object.}
 
-\item{ncomp}{Number of principal components to retain. Use \code{NULL} or a
-non-positive value to keep \code{min(nrow(x), ncol(x))} components.}
+\item{ncomp}{Number of score columns to return. Use a non-positive value to
+keep all columns in \code{rotation}.}
 
-\item{center}{Optional numeric vector of column centers.}
+\item{center}{For \code{pca_spca_stream_filematrix()}, logical; should column
+means be subtracted before fitting? For \code{pca_scores_stream_filematrix()},
+\code{NULL} or a numeric vector of column centers.}
 
-\item{scale}{Optional numeric vector of column scale factors.}
+\item{scale}{For \code{pca_spca_stream_filematrix()}, logical; should columns be
+scaled after centering? For \code{pca_scores_stream_filematrix()}, \code{NULL} or a
+numeric vector of column scale factors.}
 
 \item{chunk_size}{Number of rows to read per block.}
 
@@ -57,20 +59,12 @@ computed in a final streaming pass over the data.}
 iteration progress are emitted.}
 
 \item{rotation}{Numeric rotation matrix whose rows match \code{ncol(X)}.}
-
-\item{sink}{For \code{pca_scores_stream_filematrix()}, where scores should be
-written. \code{"r"} returns a dense R matrix, \code{"none"} scans and validates
-without retaining scores, and \code{"filematrix"} writes to a new \code{filematrix}.}
-
-\item{filematrix_base}{Optional filename base used when \code{sink = "filematrix"}.}
-
-\item{type}{Storage type for the output scores when \code{sink = "filematrix"}.}
 }
 \value{
 \code{pca_spca_stream_filematrix()} returns a \code{\link{bigpca}} object compatible
-with \code{\link[=pca_spca]{pca_spca()}} outputs. \code{pca_scores_stream_filematrix()} returns a dense
-matrix for \code{sink = "r"}, a \code{filematrix} object for \code{sink = "filematrix"},
-and an invisible scan summary for \code{sink = "none"}.
+with \code{\link[=pca_spca]{pca_spca()}} outputs and records the \code{spca_filematrix} backend.
+\code{pca_scores_stream_filematrix()} returns a dense score matrix computed by
+scanning the \code{filematrix} input in row blocks.
 }
 \description{
 Experimental streaming helpers for \code{filematrix} inputs. These functions read

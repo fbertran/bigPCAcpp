@@ -15,6 +15,16 @@ align_columns_filematrix <- function(reference, target) {
   tgt_mat
 }
 
+expect_subspace_close_filematrix <- function(reference, target, tolerance = 1e-6) {
+  ref_mat <- as.matrix(reference)
+  tgt_mat <- as.matrix(target)
+  expect_equal(
+    ref_mat %*% t(ref_mat),
+    tgt_mat %*% t(tgt_mat),
+    tolerance = tolerance
+  )
+}
+
 make_test_filematrix <- function(x, label) {
   base <- file.path(
     tempdir(),
@@ -25,7 +35,7 @@ make_test_filematrix <- function(x, label) {
   fm
 }
 
-test_that("pca_spca_stream_filematrix matches dense SPCA on small data", {
+test_that("pca_spca dispatches filematrix inputs and matches dense SPCA on small data", {
   skip_if_not_installed("filematrix")
 
   set.seed(707)
@@ -38,12 +48,12 @@ test_that("pca_spca_stream_filematrix matches dense SPCA on small data", {
   colnames(fm) <- colnames(dense)
   rownames(fm) <- rownames(dense)
 
-  file_res <- pca_spca_stream_filematrix(
+  file_res <- pca_spca(
     fm,
     ncomp = 2,
     center = TRUE,
     scale = FALSE,
-    chunk_size = 9L,
+    block_size = 9L,
     max_iter = 80L,
     tol = 1e-5,
     seed = 11L,
@@ -61,10 +71,8 @@ test_that("pca_spca_stream_filematrix matches dense SPCA on small data", {
     return_scores = TRUE
   )
 
-  expect_s3_class(file_res, c("bigpca_spca_stream_filematrix", "bigpca"))
-  expect_equal(attr(file_res, "backend"), "spca_stream_filematrix")
-  expect_true(isTRUE(attr(file_res, "experimental")))
-  expect_equal(attr(file_res, "storage_type"), "filematrix")
+  expect_s3_class(file_res, c("bigpca_spca_filematrix", "bigpca"))
+  expect_equal(attr(file_res, "backend"), "spca_filematrix")
   expect_null(file_res$covariance)
   expect_true(all(is.finite(file_res$rotation)))
   expect_true(all(is.finite(file_res$sdev)))
@@ -96,8 +104,8 @@ test_that("pca_spca dispatches filematrix inputs to streaming backend", {
     seed = 5L
   )
 
-  expect_s3_class(res, c("bigpca_spca_stream_filematrix", "bigpca"))
-  expect_equal(attr(res, "backend"), "spca_stream_filematrix")
+  expect_s3_class(res, c("bigpca_spca_filematrix", "bigpca"))
+  expect_equal(attr(res, "backend"), "spca_filematrix")
 })
 
 test_that("pca_scores_stream_filematrix streams scores by row block", {
@@ -119,48 +127,53 @@ test_that("pca_scores_stream_filematrix streams scores by row block", {
     rotation = rotation,
     center = center,
     scale = scale,
-    chunk_size = 7L,
-    sink = "r"
+    ncomp = 2L,
+    chunk_size = 7L
   )
-  expected <- sweep(sweep(dense, 2, center, "-"), 2, scale, "/") %*% rotation
+  expected <- sweep(sweep(dense, 2, center, "-"), 2, scale, "/") %*% rotation[, seq_len(2), drop = FALSE]
 
   expect_equal(scores, expected, tolerance = 1e-10)
-
-  scan_info <- pca_scores_stream_filematrix(
-    fm,
-    rotation = rotation,
-    center = center,
-    scale = scale,
-    chunk_size = 6L,
-    sink = "none"
-  )
-  expect_equal(scan_info$nobs, nrow(dense))
-  expect_equal(scan_info$ncomp, ncol(rotation))
-  expect_equal(scan_info$sink, "none")
-  expect_equal(scan_info$storage_type, "filematrix")
 })
 
-test_that("pca_scores_stream_filematrix can write scores to filematrix", {
+test_that("pca_spca_stream_filematrix handles a modest wide case", {
   skip_if_not_installed("filematrix")
 
-  dense <- matrix(rnorm(80), nrow = 20, ncol = 4)
-  fm <- make_test_filematrix(dense, "score_stream_source")
+  set.seed(909)
+  dense <- matrix(rnorm(900), nrow = 30, ncol = 30)
+  dense[, 1:5] <- dense[, 1:5] + matrix(rnorm(30 * 5, sd = 0.1), nrow = 30)
+  fm <- make_test_filematrix(dense, "spca_wide")
   on.exit(filematrix::closeAndDeleteFiles(fm), add = TRUE)
 
-  rotation <- qr.Q(qr(matrix(rnorm(ncol(dense) * 2), nrow = ncol(dense), ncol = 2)))
-  out_base <- file.path(
-    tempdir(),
-    paste("bigpcacpp_score_sink", Sys.getpid(), sample.int(100000000L, 1L), sep = "_")
-  )
-  scores_fm <- pca_scores_stream_filematrix(
+  file_res <- pca_spca_stream_filematrix(
     fm,
-    rotation = rotation,
-    chunk_size = 5L,
-    sink = "filematrix",
-    filematrix_base = out_base
+    ncomp = 3,
+    center = TRUE,
+    scale = TRUE,
+    chunk_size = 6L,
+    max_iter = 80L,
+    tol = 1e-5,
+    seed = 17L,
+    return_scores = TRUE
   )
-  on.exit(filematrix::closeAndDeleteFiles(scores_fm), add = TRUE)
+  dense_res <- pca_spca_R(
+    dense,
+    ncomp = 3,
+    center = TRUE,
+    scale = TRUE,
+    block_size = 6L,
+    max_iter = 80L,
+    tol = 1e-5,
+    seed = 17L,
+    return_scores = TRUE
+  )
 
-  expect_true(is_filematrix_object(scores_fm))
-  expect_equal(scores_fm[, ], dense %*% rotation, tolerance = 1e-10)
+  expect_s3_class(file_res, c("bigpca_spca_filematrix", "bigpca"))
+  expect_equal(attr(file_res, "backend"), "spca_filematrix")
+  expect_true(all(is.finite(file_res$rotation)))
+  expect_true(all(is.finite(file_res$sdev)))
+  expect_equal(unname(file_res$sdev), unname(dense_res$sdev), tolerance = 1e-6)
+  expect_subspace_close_filematrix(dense_res$rotation, file_res$rotation, tolerance = 1e-6)
+
+  aligned_scores <- align_columns_filematrix(dense_res$scores, file_res$scores)
+  expect_equal(aligned_scores, dense_res$scores, tolerance = 1e-6)
 })

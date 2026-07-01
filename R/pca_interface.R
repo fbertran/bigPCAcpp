@@ -618,7 +618,7 @@ pca_spca <- function(x,
     result
 }
 
-#' Principal component analysis for `bigmemory::big.matrix` inputs
+#' Streaming scalable PCA for matrix, bigmemory, and filematrix inputs
 #' 
 #' @description
 #' Implements the scalable PCA (sPCA) procedure of Elgamal et al. (2015), which
@@ -627,10 +627,10 @@ pca_spca <- function(x,
 #' matrix-vector products, allowing large matrices to be processed without
 #' materialising the full cross-product in memory.
 #'
-#' @param x A numeric matrix, data frame, [`bigmemory::big.matrix`], or an
-#'   external pointer referencing a big.matrix. The input is processed in
-#'   row-wise blocks so that large matrices can be analysed without creating
-#'   dense copies in R memory.
+#' @param x A numeric matrix, data frame, [`bigmemory::big.matrix`],
+#'   `filematrix`, or an external pointer referencing a big.matrix. The input
+#'   is processed in row-wise blocks so that large matrices can be analysed
+#'   without creating dense copies in R memory.
 #' @param ncomp Number of principal components to retain. Use `NULL` or a
 #'   non-positive value to keep `min(nrow(x), ncol(x))` components.
 #' @param center Logical; should column means be subtracted before performing
@@ -995,7 +995,7 @@ pca_spca_R <- function(x,
     run_with_seed(seed, run_impl)
 }
 
-#' Principal component analysis for `bigmemory::big.matrix` inputs
+#' Streaming scalable PCA for matrix, bigmemory, and filematrix inputs
 #' 
 #' @description
 #' Implements the scalable PCA (sPCA) procedure of Elgamal et al. (2015), which
@@ -1004,10 +1004,10 @@ pca_spca_R <- function(x,
 #' matrix-vector products, allowing large matrices to be processed without
 #' materialising the full cross-product in memory.
 #'
-#' @param x A numeric matrix, data frame, [`bigmemory::big.matrix`], or an
-#'   external pointer referencing a big.matrix. The input is processed in
-#'   row-wise blocks so that large matrices can be analysed without creating
-#'   dense copies in R memory.
+#' @param x A numeric matrix, data frame, [`bigmemory::big.matrix`],
+#'   `filematrix`, or an external pointer referencing a big.matrix. The input
+#'   is processed in row-wise blocks so that large matrices can be analysed
+#'   without creating dense copies in R memory.
 #' @param ncomp Number of principal components to retain. Use `NULL` or a
 #'   non-positive value to keep `min(nrow(x), ncol(x))` components.
 #' @param center Logical; should column means be subtracted before performing

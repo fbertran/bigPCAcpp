@@ -10,17 +10,18 @@
 #'
 #' @inheritParams pca_spca
 #' @param X A `filematrix` object.
+#' @param center For `pca_spca_stream_filematrix()`, logical; should column
+#'   means be subtracted before fitting? For `pca_scores_stream_filematrix()`,
+#'   `NULL` or a numeric vector of column centers.
+#' @param scale For `pca_spca_stream_filematrix()`, logical; should columns be
+#'   scaled after centering? For `pca_scores_stream_filematrix()`, `NULL` or a
+#'   numeric vector of column scale factors.
 #' @param chunk_size Number of rows to read per block.
-#' @param sink For `pca_scores_stream_filematrix()`, where scores should be
-#'   written. `"r"` returns a dense R matrix, `"none"` scans and validates
-#'   without retaining scores, and `"filematrix"` writes to a new `filematrix`.
-#' @param filematrix_base Optional filename base used when `sink = "filematrix"`.
-#' @param type Storage type for the output scores when `sink = "filematrix"`.
 #'
 #' @return `pca_spca_stream_filematrix()` returns a [`bigpca`] object compatible
-#'   with [pca_spca()] outputs. `pca_scores_stream_filematrix()` returns a dense
-#'   matrix for `sink = "r"`, a `filematrix` object for `sink = "filematrix"`,
-#'   and an invisible scan summary for `sink = "none"`.
+#'   with [pca_spca()] outputs and records the `spca_filematrix` backend.
+#'   `pca_scores_stream_filematrix()` returns a dense score matrix computed by
+#'   scanning the `filematrix` input in row blocks.
 #'
 #' @name filematrix_streaming_pca
 NULL
@@ -32,7 +33,7 @@ pca_spca_stream_filematrix <- function(
         ncomp = NULL,
         center = TRUE,
         scale = FALSE,
-        chunk_size = 8192L,
+        chunk_size = 2048L,
         max_iter = 50L,
         tol = 1e-4,
         seed = NULL,
@@ -60,18 +61,16 @@ pca_spca_stream_filematrix <- function(
 
 #' @rdname filematrix_streaming_pca
 #' @param rotation Numeric rotation matrix whose rows match `ncol(X)`.
-#' @param center Optional numeric vector of column centers.
-#' @param scale Optional numeric vector of column scale factors.
+#' @param ncomp Number of score columns to return. Use a non-positive value to
+#'   keep all columns in `rotation`.
 #' @export
 pca_scores_stream_filematrix <- function(
         X,
         rotation,
         center = NULL,
         scale = NULL,
-        chunk_size = 8192L,
-        sink = c("r", "filematrix", "none"),
-        filematrix_base = NULL,
-        type = "double") {
+        ncomp = -1L,
+        chunk_size = 1024L) {
     if (!requireNamespace("filematrix", quietly = TRUE)) {
         stop("pca_scores_stream_filematrix() requires the optional filematrix package.", call. = FALSE)
     }
@@ -82,9 +81,7 @@ pca_scores_stream_filematrix <- function(
         rotation = rotation,
         center = center,
         scale = scale,
-        sink = sink,
-        filematrix_base = filematrix_base,
-        type = type
+        ncomp = ncomp
     )
 }
 
@@ -243,8 +240,8 @@ pca_scores_stream_filematrix <- function(
             rotation = rotation,
             center = center_vec,
             scale = scale_vec,
-            chunk_size = provider$chunk_size,
-            sink = "r"
+            ncomp = ncomp,
+            chunk_size = provider$chunk_size
         )
     }
 
@@ -261,13 +258,11 @@ pca_scores_stream_filematrix <- function(
         covariance = NULL,
         nobs = n
     )
-    result <- new_bigpca_result(result, "spca_stream_filematrix")
+    result <- new_bigpca_result(result, "spca_filematrix")
     attr(result, "iterations") <- iterations
     attr(result, "tolerance") <- tol
     attr(result, "converged") <- isTRUE(converged)
     attr(result, "delta") <- final_delta
-    attr(result, "storage_type") <- provider$storage_type
-    attr(result, "experimental") <- TRUE
     result
 }
 
@@ -276,10 +271,7 @@ pca_scores_stream_filematrix <- function(
                                         rotation,
                                         center,
                                         scale,
-                                        sink,
-                                        filematrix_base,
-                                        type) {
-    sink <- match.arg(sink, c("r", "filematrix", "none"))
+                                        ncomp) {
     rotation <- as.matrix(rotation)
     if (!is.numeric(rotation)) {
         stop("`rotation` must be a numeric matrix", call. = FALSE)
@@ -287,29 +279,24 @@ pca_scores_stream_filematrix <- function(
     if (nrow(rotation) != provider$ncol()) {
         stop("`rotation` must have one row per filematrix column", call. = FALSE)
     }
+    if (ncol(rotation) < 1L) {
+        stop("`rotation` must contain at least one component", call. = FALSE)
+    }
+
+    if (is.null(ncomp) || ncomp <= 0L) {
+        ncomp <- ncol(rotation)
+    }
+    ncomp <- as.integer(ncomp)
+    if (is.na(ncomp) || ncomp < 1L || ncomp > ncol(rotation)) {
+        stop("`ncomp` must be between 1 and the number of rotation columns, or non-positive for all columns", call. = FALSE)
+    }
+    rotation <- rotation[, seq_len(ncomp), drop = FALSE]
 
     n <- provider$nrow()
-    k <- ncol(rotation)
     center_vec <- resolve_center_vector(center, provider$ncol())
     scale_vec <- resolve_scale_vector(scale, provider$ncol())
     block_starts <- seq.int(1L, n, by = provider$chunk_size)
-
-    out <- switch(
-        sink,
-        r = matrix(0, nrow = n, ncol = k),
-        filematrix = {
-            if (is.null(filematrix_base)) {
-                filematrix_base <- tempfile("bigPCAcpp_filematrix_scores_")
-            }
-            filematrix::fm.create(
-                filenamebase = filematrix_base,
-                nrow = n,
-                ncol = k,
-                type = type
-            )
-        },
-        none = NULL
-    )
+    out <- matrix(0, nrow = n, ncol = ncomp)
 
     row_index <- 1L
     for (start in block_starts) {
@@ -320,28 +307,15 @@ pca_scores_stream_filematrix <- function(
         block <- sweep(block, 2, scale_vec, "/", check.margin = FALSE)
         block_scores <- block %*% rotation
         rows <- seq.int(row_index, length.out = nrow(block))
-        if (sink == "r") {
-            out[rows, ] <- block_scores
-        } else if (sink == "filematrix") {
-            out[rows, ] <- block_scores
-        }
+        out[rows, ] <- block_scores
         row_index <- row_index + nrow(block)
     }
 
     score_colnames <- colnames(rotation)
     if (is.null(score_colnames)) {
-        score_colnames <- paste0("PC", seq_len(k))
+        score_colnames <- paste0("PC", seq_len(ncomp))
     }
     row_names <- .filematrix_rownames(X)
-
-    if (sink == "none") {
-        return(invisible(list(
-            nobs = n,
-            ncomp = k,
-            sink = "none",
-            storage_type = provider$storage_type
-        )))
-    }
 
     colnames(out) <- score_colnames
     if (!is.null(row_names) && length(row_names) == n) {

@@ -89,7 +89,7 @@ test_that("filematrix provider validates inputs and bounds", {
   expect_error(provider$get_block(1L, 2L, 1L, 3L), "outside provider dimensions")
 })
 
-test_that("filematrix provider is benchmark groundwork, not a PCA backend", {
+test_that("filematrix provider and streaming functions are exported", {
   skip_if_not_installed("filematrix")
 
   expect_true("make_filematrix_row_provider" %in% getNamespaceExports("bigPCAcpp"))

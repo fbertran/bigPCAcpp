@@ -23,7 +23,6 @@ list with \code{nrow()}, \code{ncol()}, \code{get_rows()}, \code{get_cols()}, \c
 \description{
 \code{make_filematrix_row_provider()} creates a minimal block-access adapter for
 \code{filematrix} objects. The provider is intended for block-wise sequential
-access by benchmark and future streaming PCA backends. It avoids adding a
-true filematrix PCA backend while exposing the same row-block contract used
-by external benchmark layers.
+access by benchmark code and streaming PCA backends. It exposes the same
+row-block contract used by external benchmark layers.
 }
